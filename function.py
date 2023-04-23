@@ -80,9 +80,10 @@ def gene_data(p_1,p_2,n,r_J,r_1,r_2,r_prop,w_J,w_1,w_2,X1_erro,X2_erro,y_erro):
 
     return X_1_final,X_2_final,y_final
 
-def sJIVE(eta,r_J,r_1,r_2,X_1,X_2,y):
+def sJIVE(eta,n,r_J,r_1,r_2,X_1,X_2,y):
+    number=0
     erro_lis=[]
-    erro=100.0
+    erro_best=1000.0
     p_1=X_1.shape[0]
     p_2=X_2.shape[0]
     n=X_1.shape[1]
@@ -90,17 +91,18 @@ def sJIVE(eta,r_J,r_1,r_2,X_1,X_2,y):
     X_2=math.sqrt(eta)*X_2
     y=math.sqrt(1-eta)*y
     #初期値を入れる
-    U_1=math.sqrt(eta)*np.random.uniform(low=-0.1, high=0.1, size=(p_1,r_J))
-    U_2=math.sqrt(eta)*np.random.uniform(low=-0.1, high=0.1, size=(p_2,r_J))
-    W_1=math.sqrt(eta)*np.random.uniform(low=-0.1, high=0.1, size=(p_1,r_1))
-    W_2=math.sqrt(eta)*np.random.uniform(low=-0.1, high=0.1, size=(p_2,r_2))
-    theta_1=math.sqrt(1-eta)*np.random.uniform(low=-0.1, high=0.1, size=int(r_J))
-    theta_21=math.sqrt(1-eta)*np.random.uniform(low=-0.1, high=0.1, size=int(r_1))
-    theta_22=math.sqrt(1-eta)*np.random.uniform(low=-0.1, high=0.1, size=int(r_2))
-    S_J=np.random.uniform(low=-0.1, high=0.1, size=(r_J,n))
-    S_1=np.random.uniform(low=-0.1, high=0.1, size=(r_1,n))
-    S_2=np.random.uniform(low=-0.1, high=0.1, size=(r_2,n))
-    while erro>10.0:
+    U_1=U_1_best=math.sqrt(eta)*np.random.uniform(low=-0.1, high=0.1, size=(p_1,r_J))
+    U_2=U_2_best=math.sqrt(eta)*np.random.uniform(low=-0.1, high=0.1, size=(p_2,r_J))
+    W_1=W_1_best=math.sqrt(eta)*np.random.uniform(low=-0.1, high=0.1, size=(p_1,r_1))
+    W_2=W_2_best=math.sqrt(eta)*np.random.uniform(low=-0.1, high=0.1, size=(p_2,r_2))
+    theta_1=theta_1_best=math.sqrt(1-eta)*np.random.uniform(low=-0.1, high=0.1, size=int(r_J))
+    theta_21=theta_21_best=math.sqrt(1-eta)*np.random.uniform(low=-0.1, high=0.1, size=int(r_1))
+    theta_22=theta_22_best=math.sqrt(1-eta)*np.random.uniform(low=-0.1, high=0.1, size=int(r_2))
+    S_J=S_J_best=np.random.uniform(low=-0.1, high=0.1, size=(r_J,n))
+    S_1=S_1_best=np.random.uniform(low=-0.1, high=0.1, size=(r_1,n))
+    S_2=S_2_best=np.random.uniform(low=-0.1, high=0.1, size=(r_2,n))
+    hat_X_y_best=np.random.uniform(low=-0.1, high=0.1, size=(p_1+p_2+1,n))
+    for i in range(n):
         #以下を誤差が収束するまで繰り返し
         #S_Jを更新
         U_theta_1=np.row_stack((U_1,U_2,theta_1)) #1
@@ -110,65 +112,73 @@ def sJIVE(eta,r_J,r_1,r_2,X_1,X_2,y):
         W_S=np.row_stack((W_1_S_1,W_2_S_2))
         theta_2i_S_i=theta_21.dot(S_1)+theta_22.dot(S_2)
         W_theta_2i_S_i=np.row_stack((W_S,theta_2i_S_i)) #3
-        S_J_new=U_theta_1.T.dot(X_y-W_theta_2i_S_i) #1,2,3からS_Jを更新
+        S_J=U_theta_1.T.dot(X_y-W_theta_2i_S_i) #1,2,3からS_Jを更新
+
         #U_1,U_2,theta_1を更新
         X_y_joint=X_y-W_theta_2i_S_i
         U_J,sigma_J,VT_J=np.linalg.svd(X_y_joint,full_matrices=False) #特異値分解を行う
-        U_1_new=U_J[:p_1,:r_J]
-        U_2_new=U_J[p_1:p_1+p_2,:r_J]
-        theta_1_new=U_J[p_1+p_2:,:r_J]
+        U_theta_1=U_J[:,:r_J]
+        #かけたら１になるようにスケーリング
+        U_1=U_theta_1[:p_1,:]
+        U_2=U_theta_1[p_1:p_1+p_2,:]
+        theta_1=U_theta_1[p_1+p_2:,:]
+        
         #S_1を更新
         W_1_theta_21=np.row_stack((W_1,theta_21)) #1
         y_theta_22S_2=y-theta_22.dot(S_2)
         X_1_y_theta_22S_2=np.row_stack((X_1,y_theta_22S_2)) #2
-        U_1_S_J=U_1_new.dot(S_J_new)
-        theta_1_S_J=theta_1_new.dot(S_J_new)
+        U_1_S_J=U_1.dot(S_J)
+        theta_1_S_J=theta_1.dot(S_J)
         U_1_S_J_theta_1_S_J=np.row_stack((U_1_S_J,theta_1_S_J)) #3
-        P_SJ=S_J_new.T.dot(np.linalg.inv(S_J_new.dot(S_J_new.T))).dot(S_J_new)
+        P_SJ=S_J.T.dot(np.linalg.inv(S_J.dot(S_J.T))).dot(S_J)
         diag_matrix = np.diag([1] * n)
         P_SJ_C=diag_matrix-P_SJ #Jointの直交補空間を作成 #4
-        S_1_new=W_1_theta_21.T.dot((X_1_y_theta_22S_2-U_1_S_J_theta_1_S_J)).dot(P_SJ_C) #1,2,3,4からS_1を更新
+        S_1=W_1_theta_21.T.dot((X_1_y_theta_22S_2-U_1_S_J_theta_1_S_J)).dot(P_SJ_C) #1,2,3,4からS_1を更新
         #W_1,theta_21を更新
         U_I_1,sigma_1,VT_1=np.linalg.svd((X_1_y_theta_22S_2-U_1_S_J_theta_1_S_J).dot(P_SJ_C),full_matrices=False) #特異値分解を行う
-        W_1_new=U_I_1[:p_1,:r_1]
-        theta_21_new=U_I_1[p_1:,:r_1]
+        W_1=U_I_1[:p_1,:r_1]
+        zeros_1=np.zeros((p_2, r_1))
+        theta_21=U_I_1[p_1:,:r_1]
+        W_1_theta_21_re=np.row_stack((W_1,zeros_1,theta_21))
+
         #S_2を更新
         W_2_theta_22=np.row_stack((W_2,theta_22)) #1
-        y_theta_21S_1=y-theta_21_new.dot(S_1_new)
+        y_theta_21S_1=y-theta_21.dot(S_1)
         X_2_y_theta_21S_1=np.row_stack((X_2,y_theta_21S_1)) #2
-        U_2_S_J=U_2_new.dot(S_J_new)
-        theta_1_S_J=theta_1_new.dot(S_J_new)
+        U_2_S_J=U_2.dot(S_J)
+        theta_1_S_J=theta_1.dot(S_J)
         U_2_S_J_theta_1_S_J=np.row_stack((U_2_S_J,theta_1_S_J)) #3
-        S_2_new=W_2_theta_22.T.dot(X_2_y_theta_21S_1-U_2_S_J_theta_1_S_J).dot(P_SJ_C) #1,2,3からS_2を更新
+        S_2=W_2_theta_22.T.dot(X_2_y_theta_21S_1-U_2_S_J_theta_1_S_J).dot(P_SJ_C) #1,2,3からS_2を更新
         #W_2,theta_22を更新
         U_I_2,sigma_2,VT_2=np.linalg.svd((X_2_y_theta_21S_1-U_2_S_J_theta_1_S_J).dot(P_SJ_C),full_matrices=False) #特異値分解を行う
-        W_2_new=U_I_2[:p_2,:r_2]
-        theta_22_new=U_I_2[p_2:,:r_2]
+        zeros_2=np.zeros((p_1, r_2))
+        W_2=U_I_2[:p_2,:r_2]
+        theta_22=U_I_2[p_2:,:r_2]
+        W_2_theta_22_re=np.row_stack((zeros_2,W_2,theta_22))
+
         #推定値を計算
-        U_theta_1=np.row_stack((U_1,U_2,theta_1)) #1
-        W_1_S_1=W_1.dot(S_1)
-        W_2_S_2=W_2.dot(S_2)
-        W_S=np.row_stack((W_1_S_1,W_2_S_2)) #2
-        theta_2i_S_i=theta_21.dot(S_1)+theta_22.dot(S_2)
-        W_theta_2i_S_i=np.row_stack((W_S,theta_2i_S_i)) #3
-        hat_X_y=U_theta_1.dot(S_J)+W_theta_2i_S_i #1,2,3から推定値を算出
+        hat_X_y=U_theta_1.dot(S_J)+W_1_theta_21_re.dot(S_1)+W_2_theta_22_re.dot(S_2) #1,2,3から推定値を算出
         #誤差を計算
         X_y=np.row_stack((X_1,X_2,y))
         erro=np.linalg.norm(X_y-hat_X_y,ord=2)**2
         erro_lis.append(erro)
-        #更新
-        S_J=S_J_new
-        U_1=U_1_new
-        U_2=U_2_new
-        theta_1=theta_1_new
-        S_1=S_1_new
-        W_1=W_1_new
-        theta_21=theta_21_new
-        S_2=S_2_new
-        W_2=W_2_new
-        theta_22=theta_22_new
 
-    return erro_lis,S_J,U_1,U_2,theta_1,S_1,W_1,theta_21,S_2,W_2,theta_22
+        if erro<erro_best:
+            number=i
+            erro_best=erro
+            S_J_best=S_J
+            U_1_best=U_1
+            U_2_best=U_2
+            theta_1_best=theta_1
+            S_1_best=S_1
+            W_1_best=W_1
+            theta_21_best=theta_21
+            S_2_best=S_1
+            W_2_best=W_2
+            theta_22_best=theta_22
+            hat_X_y_best=hat_X_y
+
+    return erro_lis,number,erro_best,S_J_best,U_1_best,U_2_best,theta_1_best,S_1_best,W_1_best,theta_21_best,S_2_best,W_2_best,theta_22_best,hat_X_y_best
 
 
 
