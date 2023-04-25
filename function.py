@@ -91,12 +91,10 @@ def gene_data(p_1,p_2,n,r_J,r_1,r_2,r_prop,w_J,w_1,w_2,X1_erro,X2_erro,y_erro):
 
 def sJIVE(eta,times,r_J,r_1,r_2,X_1_or,X_2_or,y_or):
     number_best=0
-    number_worst=0
     threshold=10.0
     times=times
     erro_lis=[]
     erro_best=1000.0
-    erro_worst=100
     p_1=X_1_or.shape[0]
     p_2=X_2_or.shape[0]
     n=X_1_or.shape[1]
@@ -156,21 +154,6 @@ def sJIVE(eta,times,r_J,r_1,r_2,X_1_or,X_2_or,y_or):
             theta_22_best=theta_22
             hat_X_y_best=hat_X_y
 
-        elif erro>erro_worst:
-            number_worst=i
-            erro_worst=erro
-            S_J_worst=S_J
-            U_1_worst=U_1
-            U_2_worst=U_2
-            theta_1_worst=theta_1
-            S_1_worst=S_1
-            W_1_worst=W_1
-            theta_21_worst=theta_21
-            S_2_worst=S_1
-            W_2_worst=W_2
-            theta_22_worst=theta_22
-            hat_X_y_worst=hat_X_y
-
         if erro<threshold:
             break
 
@@ -206,21 +189,6 @@ def sJIVE(eta,times,r_J,r_1,r_2,X_1_or,X_2_or,y_or):
             W_2_best=W_2
             theta_22_best=theta_22
             hat_X_y_best=hat_X_y
-
-        elif erro>erro_worst:
-            number_worst=i
-            erro_worst=erro
-            S_J_worst=S_J
-            U_1_worst=U_1
-            U_2_worst=U_2
-            theta_1_worst=theta_1
-            S_1_worst=S_1
-            W_1_worst=W_1
-            theta_21_worst=theta_21
-            S_2_worst=S_1
-            W_2_worst=W_2
-            theta_22_worst=theta_22
-            hat_X_y_worst=hat_X_y
 
         if erro<threshold:
             break
@@ -262,20 +230,6 @@ def sJIVE(eta,times,r_J,r_1,r_2,X_1_or,X_2_or,y_or):
             theta_22_best=theta_22
             hat_X_y_best=hat_X_y
 
-        elif erro>erro_worst:
-            number_worst=i
-            erro_worst=erro
-            S_J_worst=S_J
-            U_1_worst=U_1
-            U_2_worst=U_2
-            theta_1_worst=theta_1
-            S_1_worst=S_1
-            W_1_worst=W_1
-            theta_21_worst=theta_21
-            S_2_worst=S_1
-            W_2_worst=W_2
-            theta_22_worst=theta_22
-            hat_X_y_worst=hat_X_y
 
         if erro<threshold:
             break
@@ -311,21 +265,6 @@ def sJIVE(eta,times,r_J,r_1,r_2,X_1_or,X_2_or,y_or):
             W_2_best=W_2
             theta_22_best=theta_22
             hat_X_y_best=hat_X_y
-
-        elif erro>erro_worst:
-            number_worst=i
-            erro_worst=erro
-            S_J_worst=S_J
-            U_1_worst=U_1
-            U_2_worst=U_2
-            theta_1_worst=theta_1
-            S_1_worst=S_1
-            W_1_worst=W_1
-            theta_21_worst=theta_21
-            S_2_worst=S_1
-            W_2_worst=W_2
-            theta_22_worst=theta_22
-            hat_X_y_worst=hat_X_y
 
         if erro<threshold:
             break
@@ -365,21 +304,6 @@ def sJIVE(eta,times,r_J,r_1,r_2,X_1_or,X_2_or,y_or):
             theta_22_best=theta_22
             hat_X_y_best=hat_X_y
 
-        elif erro>erro_worst:
-            number_worst=i
-            erro_worst=erro
-            S_J_worst=S_J
-            U_1_worst=U_1
-            U_2_worst=U_2
-            theta_1_worst=theta_1
-            S_1_worst=S_1
-            W_1_worst=W_1
-            theta_21_worst=theta_21
-            S_2_worst=S_1
-            W_2_worst=W_2
-            theta_22_worst=theta_22
-            hat_X_y_worst=hat_X_y
-
         if erro<threshold:
             break
 
@@ -413,27 +337,113 @@ def sJIVE(eta,times,r_J,r_1,r_2,X_1_or,X_2_or,y_or):
             theta_22_best=theta_22
             hat_X_y_best=hat_X_y
 
-        elif erro>erro_worst:
-            number_worst=i
-            erro_worst=erro
-            S_J_worst=S_J
-            U_1_worst=U_1
-            U_2_worst=U_2
-            theta_1_worst=theta_1
-            S_1_worst=S_1
-            W_1_worst=W_1
-            theta_21_worst=theta_21
-            S_2_worst=S_1
-            W_2_worst=W_2
-            theta_22_worst=theta_22
-            hat_X_y_worst=hat_X_y
-
         if erro<threshold:
             break
 
 
-    return erro_lis,number_best,number_worst,erro_best,erro_worst,S_J_best,S_J_worst,U_1_best,U_1_worst,U_2_best,U_2_worst,theta_1_best,theta_1_worst,S_1_best,S_1_worst,W_1_best,W_1_worst,theta_21_best,theta_21_worst,S_2_best,S_2_worst,W_2_best,W_2_worst,theta_22_best,theta_22_worst,hat_X_y_best,hat_X_y_worst
+    return erro_lis,number_best,erro_best,S_J_best,U_1_best,U_2_best,theta_1_best,S_1_best,W_1_best,theta_21_best,S_2_best,W_2_best,theta_22_best,hat_X_y_best
 
+def sJIVE_prediction(X_1_tes,X_2_tes,y_tes,U_1_best,U_2_best,W_1_best,W_2_best,theta_1_best,theta_21_best,theta_22_best,times_tes,threshold_tes):
+    n_tes=X_1_tes.shape[1]
+    r_J=U_1_best.shape[1]
+    r_1=W_1_best.shape[1]
+    r_2=W_2_best.shape[1]
+
+    times_tes=times_tes
+    erro_tes_best=1000
+    erro_tes_lis=[]
+
+    U_1_hat=U_1_best
+    U_2_hat=U_2_best
+    U_hat=np.row_stack((U_1_hat,U_2_hat))
+
+    W_1_hat=W_1_best
+    W_2_hat=W_2_best
+    W_hat=np.row_stack((W_1_hat,W_2_hat))
+
+    theta_1_hat=theta_1_best
+    theta_21_hat=theta_21_best
+    theta_22_hat=theta_22_best
+
+    X_new=np.row_stack((X_1_tes,X_2_tes))
+
+    S_J_new=np.random.uniform(low=-0.1, high=0.1, size=(r_J,n_tes))
+    S_1_new=np.random.uniform(low=-0.1, high=0.1, size=(r_1,n_tes))
+    S_2_new=np.random.uniform(low=-0.1, high=0.1, size=(r_2,n_tes))
+
+    for j in range(times_tes):
+        #推定
+        W_1_S_1_new=W_1_hat.dot(S_1_new)
+        W_2_S_2_new=W_2_hat.dot(S_2_new)
+        W_S_new=np.row_stack((W_1_S_1_new,W_2_S_2_new))
+
+        S_J_new=U_hat.T.dot(X_new-W_S_new)
+
+        #推定値を計算
+        hat_X_1_tes=U_1_hat.dot(S_J_new)+W_1_hat.dot(S_1_new)
+        hat_X_2_tes=U_2_hat.dot(S_J_new)+W_2_hat.dot(S_2_new)
+        hat_X_tes=np.row_stack((hat_X_1_tes,hat_X_2_tes))
+
+        #誤差を計算
+        erro_tes=np.linalg.norm(X_1_tes-hat_X_1_tes)**2+np.linalg.norm(X_2_tes-hat_X_2_tes)**2
+        erro_tes_lis.append(erro_tes)
+
+        if erro_tes<erro_tes_best:
+            number_tes_best=j
+            erro_tes_best=erro_tes
+            S_J_new_best=S_J_new
+            S_1_new_best=S_1_new
+            S_2_new_best=S_2_new
+
+        if erro_tes<threshold_tes:
+            break
+
+        S_1_new=W_1_hat.T.dot(X_1_tes-U_1_hat.dot(S_J_new))
+
+        #推定値を計算
+        hat_X_1_tes=U_1_hat.dot(S_J_new)+W_1_hat.dot(S_1_new)
+        hat_X_2_tes=U_2_hat.dot(S_J_new)+W_2_hat.dot(S_2_new)
+        hat_X_tes=np.row_stack((hat_X_1_tes,hat_X_2_tes))
+        
+        #誤差を計算
+        erro_tes=np.linalg.norm(X_1_tes-hat_X_1_tes)**2+np.linalg.norm(X_2_tes-hat_X_2_tes)**2
+        erro_tes_lis.append(erro_tes)
+
+        if erro_tes<erro_tes_best:
+            number_tes_best=j
+            erro_tes_best=erro_tes
+            S_J_new_best=S_J_new
+            S_1_new_best=S_1_new
+            S_2_new_best=S_2_new
+
+        if erro_tes<threshold_tes:
+            break
+
+
+        S_2_new=W_2_hat.T.dot(X_2_tes-U_2_hat.dot(S_J_new))
+        #推定値を計算
+        hat_X_1_tes=U_1_hat.dot(S_J_new)+W_1_hat.dot(S_1_new)
+        hat_X_2_tes=U_2_hat.dot(S_J_new)+W_2_hat.dot(S_2_new)
+        hat_X_tes=np.row_stack((hat_X_1_tes,hat_X_2_tes))
+
+        #誤差を計算
+        erro_tes=np.linalg.norm(X_1_tes-hat_X_1_tes)**2+np.linalg.norm(X_2_tes-hat_X_2_tes)**2
+        erro_tes_lis.append(erro_tes)
+
+        if erro_tes<erro_tes_best:
+            number_tes_best=j
+            erro_tes_best=erro_tes
+            S_J_new_best=S_J_new
+            S_1_new_best=S_1_new
+            S_2_new_best=S_2_new
+
+        if erro_tes<threshold_tes:
+            break
+    
+    y_new=theta_1_hat.dot(S_J_new_best)+theta_21_hat.dot(S_1_new_best)+theta_22_hat.dot(S_2_new_best)
+    erro_result=np.linalg.norm(y_tes-y_new)**2
+
+    return erro_tes_lis,number_tes_best,erro_tes_best,S_J_new_best,S_1_new_best,S_2_new_best,y_new,erro_result
 
 
 
