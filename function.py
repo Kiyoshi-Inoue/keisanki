@@ -15,10 +15,14 @@ def gene_data(p_1,p_2,n,r_J,r_1,r_2,r_prop,w_J,w_1,w_2,X1_erro,X2_erro,y_erro):
     vec_theta_1=vec_theta_1.reshape(1,r_J)
     #U_iとtheta_1を更新
     U_theta_1=np.row_stack((U_1,U_2,vec_theta_1))
+    ##QR分解
     U_theta_1_Q,R=np.linalg.qr(U_theta_1)
-    U_1_new=U_theta_1_Q[:p_1,:]
-    U_2_new=U_theta_1_Q[p_1:p_1+p_2,:]
-    theta_1_new=U_theta_1_Q[p_1+p_2:,:]
+    ##正規化
+    U_theta_1_new=U_theta_1_Q/np.linalg.norm(U_theta_1_Q)
+    U_1_new=U_theta_1_new[:p_1,:]
+    U_2_new=U_theta_1_new[p_1:p_1+p_2,:]
+    theta_1_new=U_theta_1_new[p_1+p_2:,:]
+
     #S_Jの作成
     diag_joint_matrix = np.diag([w_J] * r_J)
     S_J_old=np.random.uniform(low=0, high=1, size=(r_J,n))
@@ -38,13 +42,18 @@ def gene_data(p_1,p_2,n,r_J,r_1,r_2,r_prop,w_J,w_1,w_2,X1_erro,X2_erro,y_erro):
     vec_theta_22=vec_theta_22.reshape(1,r_2)
     #W_iとtheta_2iの更新
     W_theta_21=np.row_stack((W_1,vec_theta_21))
+    ##QR分解
     W_theta_21_Q,R=np.linalg.qr(W_theta_21)
     W_theta_22=np.row_stack((W_2,vec_theta_22))
+    ##QR分解
     W_theta_22_Q,R=np.linalg.qr(W_theta_22)
-    W_1_new=W_theta_21_Q[:p_1,:]
-    W_2_new=W_theta_22_Q[:p_2,:]
-    theta_21_new=W_theta_21_Q[p_1:,:]
-    theta_22_new=W_theta_22_Q[p_2:,:]
+    ##正規化
+    W_theta_21_new=W_theta_21_Q/np.linalg.norm(W_theta_21_Q)
+    W_theta_22_new=W_theta_22_Q/np.linalg.norm(W_theta_22_Q)
+    W_1_new=W_theta_21_new[:p_1,:]
+    W_2_new=W_theta_22_new[:p_2,:]
+    theta_21_new=W_theta_21_new[p_1:,:]
+    theta_22_new=W_theta_22_new[p_2:,:]
     #S_iの生成
     diag_x1_matrix = np.diag([w_1] * r_1)
     S_1_old=np.random.uniform(low=0, high=1, size=(r_1,n))
@@ -80,16 +89,20 @@ def gene_data(p_1,p_2,n,r_J,r_1,r_2,r_prop,w_J,w_1,w_2,X1_erro,X2_erro,y_erro):
 
     return X_1_final,X_2_final,y_final
 
-def sJIVE(eta,n,r_J,r_1,r_2,X_1,X_2,y):
-    number=0
+def sJIVE(eta,times,r_J,r_1,r_2,X_1_or,X_2_or,y_or):
+    number_best=0
+    number_worst=0
+    threshold=10.0
+    times=times
     erro_lis=[]
     erro_best=1000.0
-    p_1=X_1.shape[0]
-    p_2=X_2.shape[0]
-    n=X_1.shape[1]
-    X_1=math.sqrt(eta)*X_1
-    X_2=math.sqrt(eta)*X_2
-    y=math.sqrt(1-eta)*y
+    erro_worst=100
+    p_1=X_1_or.shape[0]
+    p_2=X_2_or.shape[0]
+    n=X_1_or.shape[1]
+    X_1=math.sqrt(eta)*X_1_or
+    X_2=math.sqrt(eta)*X_2_or
+    y=math.sqrt(1-eta)*y_or
     #初期値を入れる
     U_1=U_1_best=math.sqrt(eta)*np.random.uniform(low=-0.1, high=0.1, size=(p_1,r_J))
     U_2=U_2_best=math.sqrt(eta)*np.random.uniform(low=-0.1, high=0.1, size=(p_2,r_J))
@@ -102,7 +115,11 @@ def sJIVE(eta,n,r_J,r_1,r_2,X_1,X_2,y):
     S_1=S_1_best=np.random.uniform(low=-0.1, high=0.1, size=(r_1,n))
     S_2=S_2_best=np.random.uniform(low=-0.1, high=0.1, size=(r_2,n))
     hat_X_y_best=np.random.uniform(low=-0.1, high=0.1, size=(p_1+p_2+1,n))
-    for i in range(n):
+
+    zeros_1=np.zeros((p_2, r_1))
+    zeros_2=np.zeros((p_1, r_2))
+
+    for i in range(times):
         #以下を誤差が収束するまで繰り返し
         #S_Jを更新
         U_theta_1=np.row_stack((U_1,U_2,theta_1)) #1
@@ -114,14 +131,99 @@ def sJIVE(eta,n,r_J,r_1,r_2,X_1,X_2,y):
         W_theta_2i_S_i=np.row_stack((W_S,theta_2i_S_i)) #3
         S_J=U_theta_1.T.dot(X_y-W_theta_2i_S_i) #1,2,3からS_Jを更新
 
+        #推定値を計算
+        U_theta_1=np.row_stack((U_1,U_2,theta_1))
+        W_1_theta_21=np.row_stack((W_1,zeros_1,theta_21))
+        W_2_theta_22=np.row_stack((zeros_2,W_2,theta_22))
+        hat_X_y=U_theta_1.dot(S_J)+W_1_theta_21.dot(S_1)+W_2_theta_22.dot(S_2) #1,2,3から推定値を算出
+        #誤差を計算
+        X_y=np.row_stack((X_1,X_2,y))
+        erro=np.linalg.norm(X_y-hat_X_y,ord=2)**2
+        erro_lis.append(erro)
+
+        if erro<erro_best:
+            number_best=i
+            erro_best=erro
+            S_J_best=S_J
+            U_1_best=U_1
+            U_2_best=U_2
+            theta_1_best=theta_1
+            S_1_best=S_1
+            W_1_best=W_1
+            theta_21_best=theta_21
+            S_2_best=S_1
+            W_2_best=W_2
+            theta_22_best=theta_22
+            hat_X_y_best=hat_X_y
+
+        elif erro>erro_worst:
+            number_worst=i
+            erro_worst=erro
+            S_J_worst=S_J
+            U_1_worst=U_1
+            U_2_worst=U_2
+            theta_1_worst=theta_1
+            S_1_worst=S_1
+            W_1_worst=W_1
+            theta_21_worst=theta_21
+            S_2_worst=S_1
+            W_2_worst=W_2
+            theta_22_worst=theta_22
+            hat_X_y_worst=hat_X_y
+
+        if erro<threshold:
+            break
+
         #U_1,U_2,theta_1を更新
         X_y_joint=X_y-W_theta_2i_S_i
         U_J,sigma_J,VT_J=np.linalg.svd(X_y_joint,full_matrices=False) #特異値分解を行う
         U_theta_1=U_J[:,:r_J]
-        #かけたら１になるようにスケーリング
         U_1=U_theta_1[:p_1,:]
         U_2=U_theta_1[p_1:p_1+p_2,:]
         theta_1=U_theta_1[p_1+p_2:,:]
+
+        #推定値を計算
+        U_theta_1=np.row_stack((U_1,U_2,theta_1))
+        W_1_theta_21=np.row_stack((W_1,zeros_1,theta_21))
+        W_2_theta_22=np.row_stack((zeros_2,W_2,theta_22))
+        hat_X_y=U_theta_1.dot(S_J)+W_1_theta_21.dot(S_1)+W_2_theta_22.dot(S_2) #1,2,3から推定値を算出
+        #誤差を計算
+        X_y=np.row_stack((X_1,X_2,y))
+        erro=np.linalg.norm(X_y-hat_X_y,ord=2)**2
+        erro_lis.append(erro)
+
+        if erro<erro_best:
+            number_best=i
+            erro_best=erro
+            S_J_best=S_J
+            U_1_best=U_1
+            U_2_best=U_2
+            theta_1_best=theta_1
+            S_1_best=S_1
+            W_1_best=W_1
+            theta_21_best=theta_21
+            S_2_best=S_1
+            W_2_best=W_2
+            theta_22_best=theta_22
+            hat_X_y_best=hat_X_y
+
+        elif erro>erro_worst:
+            number_worst=i
+            erro_worst=erro
+            S_J_worst=S_J
+            U_1_worst=U_1
+            U_2_worst=U_2
+            theta_1_worst=theta_1
+            S_1_worst=S_1
+            W_1_worst=W_1
+            theta_21_worst=theta_21
+            S_2_worst=S_1
+            W_2_worst=W_2
+            theta_22_worst=theta_22
+            hat_X_y_worst=hat_X_y
+
+        if erro<threshold:
+            break
         
         #S_1を更新
         W_1_theta_21=np.row_stack((W_1,theta_21)) #1
@@ -134,12 +236,100 @@ def sJIVE(eta,n,r_J,r_1,r_2,X_1,X_2,y):
         diag_matrix = np.diag([1] * n)
         P_SJ_C=diag_matrix-P_SJ #Jointの直交補空間を作成 #4
         S_1=W_1_theta_21.T.dot((X_1_y_theta_22S_2-U_1_S_J_theta_1_S_J)).dot(P_SJ_C) #1,2,3,4からS_1を更新
+
+        #推定値を計算
+        U_theta_1=np.row_stack((U_1,U_2,theta_1))
+        W_1_theta_21=np.row_stack((W_1,zeros_1,theta_21))
+        W_2_theta_22=np.row_stack((zeros_2,W_2,theta_22))
+        hat_X_y=U_theta_1.dot(S_J)+W_1_theta_21.dot(S_1)+W_2_theta_22.dot(S_2) #1,2,3から推定値を算出
+        #誤差を計算
+        X_y=np.row_stack((X_1,X_2,y))
+        erro=np.linalg.norm(X_y-hat_X_y,ord=2)**2
+        erro_lis.append(erro)
+
+        if erro<erro_best:
+            number_best=i
+            erro_best=erro
+            S_J_best=S_J
+            U_1_best=U_1
+            U_2_best=U_2
+            theta_1_best=theta_1
+            S_1_best=S_1
+            W_1_best=W_1
+            theta_21_best=theta_21
+            S_2_best=S_1
+            W_2_best=W_2
+            theta_22_best=theta_22
+            hat_X_y_best=hat_X_y
+
+        elif erro>erro_worst:
+            number_worst=i
+            erro_worst=erro
+            S_J_worst=S_J
+            U_1_worst=U_1
+            U_2_worst=U_2
+            theta_1_worst=theta_1
+            S_1_worst=S_1
+            W_1_worst=W_1
+            theta_21_worst=theta_21
+            S_2_worst=S_1
+            W_2_worst=W_2
+            theta_22_worst=theta_22
+            hat_X_y_worst=hat_X_y
+
+        if erro<threshold:
+            break
+
         #W_1,theta_21を更新
         U_I_1,sigma_1,VT_1=np.linalg.svd((X_1_y_theta_22S_2-U_1_S_J_theta_1_S_J).dot(P_SJ_C),full_matrices=False) #特異値分解を行う
         W_1=U_I_1[:p_1,:r_1]
         zeros_1=np.zeros((p_2, r_1))
         theta_21=U_I_1[p_1:,:r_1]
         W_1_theta_21_re=np.row_stack((W_1,zeros_1,theta_21))
+
+        #推定値を計算
+        U_theta_1=np.row_stack((U_1,U_2,theta_1))
+        W_1_theta_21=np.row_stack((W_1,zeros_1,theta_21))
+        W_2_theta_22=np.row_stack((zeros_2,W_2,theta_22))
+        hat_X_y=U_theta_1.dot(S_J)+W_1_theta_21.dot(S_1)+W_2_theta_22.dot(S_2) #1,2,3から推定値を算出
+        #誤差を計算
+        X_y=np.row_stack((X_1,X_2,y))
+        erro=np.linalg.norm(X_y-hat_X_y,ord=2)**2
+        erro_lis.append(erro)
+
+        if erro<erro_best:
+            number_best=i
+            erro_best=erro
+            S_J_best=S_J
+            U_1_best=U_1
+            U_2_best=U_2
+            theta_1_best=theta_1
+            S_1_best=S_1
+            W_1_best=W_1
+            theta_21_best=theta_21
+            S_2_best=S_1
+            W_2_best=W_2
+            theta_22_best=theta_22
+            hat_X_y_best=hat_X_y
+
+        elif erro>erro_worst:
+            number_worst=i
+            erro_worst=erro
+            S_J_worst=S_J
+            U_1_worst=U_1
+            U_2_worst=U_2
+            theta_1_worst=theta_1
+            S_1_worst=S_1
+            W_1_worst=W_1
+            theta_21_worst=theta_21
+            S_2_worst=S_1
+            W_2_worst=W_2
+            theta_22_worst=theta_22
+            hat_X_y_worst=hat_X_y
+
+        if erro<threshold:
+            break
+
 
         #S_2を更新
         W_2_theta_22=np.row_stack((W_2,theta_22)) #1
@@ -149,6 +339,51 @@ def sJIVE(eta,n,r_J,r_1,r_2,X_1,X_2,y):
         theta_1_S_J=theta_1.dot(S_J)
         U_2_S_J_theta_1_S_J=np.row_stack((U_2_S_J,theta_1_S_J)) #3
         S_2=W_2_theta_22.T.dot(X_2_y_theta_21S_1-U_2_S_J_theta_1_S_J).dot(P_SJ_C) #1,2,3からS_2を更新
+
+        #推定値を計算
+        U_theta_1=np.row_stack((U_1,U_2,theta_1))
+        W_1_theta_21=np.row_stack((W_1,zeros_1,theta_21))
+        W_2_theta_22=np.row_stack((zeros_2,W_2,theta_22))
+        hat_X_y=U_theta_1.dot(S_J)+W_1_theta_21.dot(S_1)+W_2_theta_22.dot(S_2) #1,2,3から推定値を算出
+        #誤差を計算
+        X_y=np.row_stack((X_1,X_2,y))
+        erro=np.linalg.norm(X_y-hat_X_y,ord=2)**2
+        erro_lis.append(erro)
+
+        if erro<erro_best:
+            number_best=i
+            erro_best=erro
+            S_J_best=S_J
+            U_1_best=U_1
+            U_2_best=U_2
+            theta_1_best=theta_1
+            S_1_best=S_1
+            W_1_best=W_1
+            theta_21_best=theta_21
+            S_2_best=S_1
+            W_2_best=W_2
+            theta_22_best=theta_22
+            hat_X_y_best=hat_X_y
+
+        elif erro>erro_worst:
+            number_worst=i
+            erro_worst=erro
+            S_J_worst=S_J
+            U_1_worst=U_1
+            U_2_worst=U_2
+            theta_1_worst=theta_1
+            S_1_worst=S_1
+            W_1_worst=W_1
+            theta_21_worst=theta_21
+            S_2_worst=S_1
+            W_2_worst=W_2
+            theta_22_worst=theta_22
+            hat_X_y_worst=hat_X_y
+
+        if erro<threshold:
+            break
+
+
         #W_2,theta_22を更新
         U_I_2,sigma_2,VT_2=np.linalg.svd((X_2_y_theta_21S_1-U_2_S_J_theta_1_S_J).dot(P_SJ_C),full_matrices=False) #特異値分解を行う
         zeros_2=np.zeros((p_1, r_2))
@@ -164,7 +399,7 @@ def sJIVE(eta,n,r_J,r_1,r_2,X_1,X_2,y):
         erro_lis.append(erro)
 
         if erro<erro_best:
-            number=i
+            number_best=i
             erro_best=erro
             S_J_best=S_J
             U_1_best=U_1
@@ -178,7 +413,26 @@ def sJIVE(eta,n,r_J,r_1,r_2,X_1,X_2,y):
             theta_22_best=theta_22
             hat_X_y_best=hat_X_y
 
-    return erro_lis,number,erro_best,S_J_best,U_1_best,U_2_best,theta_1_best,S_1_best,W_1_best,theta_21_best,S_2_best,W_2_best,theta_22_best,hat_X_y_best
+        elif erro>erro_worst:
+            number_worst=i
+            erro_worst=erro
+            S_J_worst=S_J
+            U_1_worst=U_1
+            U_2_worst=U_2
+            theta_1_worst=theta_1
+            S_1_worst=S_1
+            W_1_worst=W_1
+            theta_21_worst=theta_21
+            S_2_worst=S_1
+            W_2_worst=W_2
+            theta_22_worst=theta_22
+            hat_X_y_worst=hat_X_y
+
+        if erro<threshold:
+            break
+
+
+    return erro_lis,number_best,number_worst,erro_best,erro_worst,S_J_best,S_J_worst,U_1_best,U_1_worst,U_2_best,U_2_worst,theta_1_best,theta_1_worst,S_1_best,S_1_worst,W_1_best,W_1_worst,theta_21_best,theta_21_worst,S_2_best,S_2_worst,W_2_best,W_2_worst,theta_22_best,theta_22_worst,hat_X_y_best,hat_X_y_worst
 
 
 
