@@ -1,9 +1,12 @@
 import random
 import numpy as np
 from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import KFold
 import matplotlib.pyplot as plt
 import math
+import tqdm
 
+#データ生成
 def gene_data(p_1,p_2,n,r_J,r_1,r_2,r_prop,w_J,w_1,w_2,X1_erro,X2_erro,y_erro):
     #U_iを生成
     U_1=np.random.uniform(low=0.5, high=1, size=(p_1,r_J))
@@ -89,12 +92,13 @@ def gene_data(p_1,p_2,n,r_J,r_1,r_2,r_prop,w_J,w_1,w_2,X1_erro,X2_erro,y_erro):
 
     return X_1_final,X_2_final,y_final
 
-def sJIVE(eta,times,r_J,r_1,r_2,X_1_or,X_2_or,y_or):
+#sJIVEで近似
+def sJIVE(eta,times,r_J,r_1,r_2,X_1_or,X_2_or,y_or,threshold):
     number_best=0
-    threshold=10.0
     times=times
     erro_lis=[]
     erro_best=1000.0
+    threshold=threshold
     p_1=X_1_or.shape[0]
     p_2=X_2_or.shape[0]
     n=X_1_or.shape[1]
@@ -117,16 +121,15 @@ def sJIVE(eta,times,r_J,r_1,r_2,X_1_or,X_2_or,y_or):
     zeros_1=np.zeros((p_2, r_1))
     zeros_2=np.zeros((p_1, r_2))
 
-    for i in range(times):
+    for i in tqdm.tqdm(range(times)):
         #以下を誤差が収束するまで繰り返し
         #S_Jを更新
         U_theta_1=np.row_stack((U_1,U_2,theta_1)) #1
         X_y=np.row_stack((X_1,X_2,y)) #2
         W_1_S_1=W_1.dot(S_1)
         W_2_S_2=W_2.dot(S_2)
-        W_S=np.row_stack((W_1_S_1,W_2_S_2))
         theta_2i_S_i=theta_21.dot(S_1)+theta_22.dot(S_2)
-        W_theta_2i_S_i=np.row_stack((W_S,theta_2i_S_i)) #3
+        W_theta_2i_S_i=np.row_stack((W_1_S_1,W_2_S_2,theta_2i_S_i)) #3
         S_J=U_theta_1.T.dot(X_y-W_theta_2i_S_i) #1,2,3からS_Jを更新
 
         #推定値を計算
@@ -343,6 +346,7 @@ def sJIVE(eta,times,r_J,r_1,r_2,X_1_or,X_2_or,y_or):
 
     return erro_lis,number_best,erro_best,S_J_best,U_1_best,U_2_best,theta_1_best,S_1_best,W_1_best,theta_21_best,S_2_best,W_2_best,theta_22_best,hat_X_y_best
 
+#テストデータに対する予測モデル
 def sJIVE_prediction(X_1_tes,X_2_tes,y_tes,U_1_best,U_2_best,W_1_best,W_2_best,theta_1_best,theta_21_best,theta_22_best,times_tes,threshold_tes):
     n_tes=X_1_tes.shape[1]
     r_J=U_1_best.shape[1]
@@ -359,7 +363,6 @@ def sJIVE_prediction(X_1_tes,X_2_tes,y_tes,U_1_best,U_2_best,W_1_best,W_2_best,t
 
     W_1_hat=W_1_best
     W_2_hat=W_2_best
-    W_hat=np.row_stack((W_1_hat,W_2_hat))
 
     theta_1_hat=theta_1_best
     theta_21_hat=theta_21_best
@@ -371,7 +374,7 @@ def sJIVE_prediction(X_1_tes,X_2_tes,y_tes,U_1_best,U_2_best,W_1_best,W_2_best,t
     S_1_new=np.random.uniform(low=-0.1, high=0.1, size=(r_1,n_tes))
     S_2_new=np.random.uniform(low=-0.1, high=0.1, size=(r_2,n_tes))
 
-    for j in range(times_tes):
+    for j in tqdm.tqdm(range(times_tes)):
         #推定
         W_1_S_1_new=W_1_hat.dot(S_1_new)
         W_2_S_2_new=W_2_hat.dot(S_2_new)
@@ -445,5 +448,32 @@ def sJIVE_prediction(X_1_tes,X_2_tes,y_tes,U_1_best,U_2_best,W_1_best,W_2_best,t
 
     return erro_tes_lis,number_tes_best,erro_tes_best,S_J_new_best,S_1_new_best,S_2_new_best,y_new,erro_result
 
+#クロスバリデーション
+def cv_sJIVE(df_tra,eta,r_J,r_1,r_2,p_1,p_2,times,threshold,times_tes,threshold_tes):
+    k = 5
+    kf = KFold(n_splits=k)
+    lis_cv_best=[]
+    for train_idex,test_idx in kf.split(df_tra.T):
+        train_data=df_tra[:,train_idex]
+        test_data=df_tra[:,test_idx]
+        
+        X_1_or=train_data[:p_1,:]
+        X_2_or=train_data[p_1:p_1+p_2,:]
+        y_or=train_data[p_1+p_2:,:]
 
+        erro_lis,number_best,erro_best,S_J_best,U_1_best,U_2_best,theta_1_best,S_1_best,W_1_best,theta_21_best,S_2_best,W_2_best,theta_22_best,hat_X_y_best=sJIVE(
+            eta,times,r_J,r_1,r_2,X_1_or=X_1_or,X_2_or=X_2_or,y_or=y_or,threshold=threshold
+            )
+        
+        X_1_tes=test_data[:p_1,:]
+        X_2_tes=test_data[p_1:p_1+p_2,:]
+        y_tes=test_data[p_1+p_2:,:]
 
+        erro_tes_lis,number_tes_best,erro_tes_best,S_J_new_best,S_1_new_best,S_2_new_best,y_new,erro_result=sJIVE_prediction(
+            X_1_tes,X_2_tes,y_tes,U_1_best,U_2_best,W_1_best,W_2_best,theta_1_best,theta_21_best,theta_22_best,times_tes,threshold_tes
+            )
+        lis_cv_best.append(erro_tes_best)
+
+    accuracy_sJIVE=np.mean(lis_cv_best)
+
+    return accuracy_sJIVE
