@@ -89,7 +89,7 @@ def gene_data(p_1,p_2,n,r_J,r_1,r_2,r_prop,w_J,w_1,w_2,X1_erro,X2_erro,y_erro):
     # X_1_final = ms.fit_transform(X_1)
     # X_2_final = ms.fit_transform(X_2)
     # y_final=(y-np.mean(y))/np.std(y)
-    # X_1_final,X_2_final,y_final
+# X_1_final,X_2_final,y_final
     return X_1,X_2,y
 
 def gene_data_2(p_1,p_2,n,r_J,r_1,r_2,r_prop,W_J_lis,W_1_lis,W_2_lis,X1_erro,X2_erro,y_erro):
@@ -580,6 +580,9 @@ def W_sJIVE_decompositon_1(times,r_J,r_1,r_2,X_1_or,X_2_or,threshold):
     S_J=S_J_best=np.random.uniform(low=-0.1, high=0.1, size=(r_J,n))
     S_1=S_1_best=np.random.uniform(low=-0.1, high=0.1, size=(r_1,n))
     S_2=S_2_best=np.random.uniform(low=-0.1, high=0.1, size=(r_2,n))
+    sigma_J=sigma_J_best=np.diag([1] * r_J)
+    sigma_1=sigma_1_best=np.diag([1] * r_1)
+    sigma_2=sigma_2_best=np.diag([1] * r_2)
     hat_X_best=np.random.uniform(low=-0.1, high=0.1, size=(p_1+p_2+1,n))
     zeros_1=np.zeros((p_2, r_1))
     zeros_2=np.zeros((p_1, r_2))
@@ -821,31 +824,27 @@ def W_sJIVE_decomposition_2(y_original,threshold,times,lam_J,lam_1,lam_2,gamma,S
             S_J_best_del_j=np.delete(S_J_best,j,axis=0)
             S_J_best_j=S_J_best[j]
             z=(y_original-theta_21.dot(S_1_best)-theta_22.dot(S_2_best)-theta_1_del_j.dot(S_J_best_del_j)).dot(S_J_best_j.T)
-            if z<0:
-                if np.absolute(z)>lam_J:
-                    theta_1[j]=-(np.absolute(z)-lam_J)/(np.linalg.norm(S_J_best_j,ord=2)**2+gamma*diag_sigma_J_final_r_J[j,j])
-                elif np.absolute(z)<=lam_J:
-                    theta_1[j]=0
+            if z>lam_J:
+                theta_1[j]=(z-lam_J)/(np.linalg.norm(S_J_best_j,ord=2)**2)
+            elif np.absolute(z)<=lam_J:
+                theta_1[j]=0
             else:
-                if np.absolute(z)>lam_J:
-                    theta_1[j]=(np.absolute(z)-lam_J)/(np.linalg.norm(S_J_best_j,ord=2)**2+gamma*diag_sigma_J_final_r_J[j,j])
-                elif np.absolute(z)<=lam_J:
-                    theta_1[j]=0
+                theta_1[j]=(z+lam_J)/(np.linalg.norm(S_J_best_j,ord=2)**2)
 
         #誤差をとる
         hat_y=theta_1.dot(S_J_best)+theta_21.dot(S_1_best)+theta_22.dot(S_2_best)
         erro=np.linalg.norm(y_original-hat_y,ord=2)**2
         erro_y_lis.append(erro)
 
-        if erro<erro_best:
-            erro_best=erro
-            theta_1_best=theta_1
-            theta_21_best=theta_21
-            theta_22_best=theta_22
-            hat_y_best=hat_y
+        # if erro<erro_best:
+        #     erro_best=erro
+        #     theta_1_best=theta_1
+        #     theta_21_best=theta_21
+        #     theta_22_best=theta_22
+        #     hat_y_best=hat_y
 
-        if erro<threshold:
-            break
+        # if erro<threshold:
+        #     break
 
         #theta_21を更新
         for j in range(r_1):
@@ -853,31 +852,28 @@ def W_sJIVE_decomposition_2(y_original,threshold,times,lam_J,lam_1,lam_2,gamma,S
             S_1_best_del_j=np.delete(S_1_best,j,axis=0)
             S_1_best_j=S_1_best[j]
             z=(y_original-theta_1.dot(S_J_best)-theta_22.dot(S_2_best)-theta_21_del_j.dot(S_1_best_del_j)).dot(S_1_best_j.T)
-            if z<0:
-                if np.absolute(z)>lam_1:
-                    theta_21[j]=-(np.absolute(z)-lam_1)/(np.linalg.norm(S_1_best_j,ord=2)**2+gamma*diag_sigma_1_final_r_1[j,j])
-                elif np.absolute(z)<=lam_1:
-                    theta_21[j]=0
+            if z>lam_1:
+                theta_21[j]=(z-lam_1)/(np.linalg.norm(S_1_best_j,ord=2)**2+gamma*diag_sigma_1_final_r_1[j,j])
+            elif np.absolute(z)<=lam_1:
+                theta_21[j]=0
             else:
-                if np.absolute(z)>lam_1:
-                    theta_21[j]=(np.absolute(z)-lam_1)/(np.linalg.norm(S_1_best_j,ord=2)**2+gamma*diag_sigma_1_final_r_1[j,j])
-                elif np.absolute(z)<=lam_1:
-                    theta_21[j]=0
+                theta_21[j]=(z+lam_1)/(np.linalg.norm(S_1_best_j,ord=2)**2+gamma*diag_sigma_1_final_r_1[j,j])
+
 
         #誤差をとる
         hat_y=theta_1.dot(S_J_best)+theta_21.dot(S_1_best)+theta_22.dot(S_2_best)
         erro=np.linalg.norm(y_original-hat_y,ord=2)**2
         erro_y_lis.append(erro)
 
-        if erro<erro_best:
-            erro_best=erro
-            theta_1_best=theta_1
-            theta_21_best=theta_21
-            theta_22_best=theta_22
-            hat_y_best=hat_y
+        # if erro<erro_best:
+        #     erro_best=erro
+        #     theta_1_best=theta_1
+        #     theta_21_best=theta_21
+        #     theta_22_best=theta_22
+        #     hat_y_best=hat_y
 
-        if erro<threshold:
-            break
+        # if erro<threshold:
+        #     break
 
         #theta_22を更新
         for j in range(r_2):
@@ -885,820 +881,33 @@ def W_sJIVE_decomposition_2(y_original,threshold,times,lam_J,lam_1,lam_2,gamma,S
             S_2_best_del_j=np.delete(S_2_best,j,axis=0)
             S_2_best_j=S_2_best[j]
             z=(y_original-theta_1.dot(S_J_best)-theta_21.dot(S_1_best)-theta_22_del_j.dot(S_2_best_del_j)).dot(S_2_best_j.T)
-            if z<0:
-                if np.absolute(z)>lam_2:
-                    theta_22[j]=-(np.absolute(z)-lam_2)/(np.linalg.norm(S_2_best_j,ord=2)**2+gamma*diag_sigma_2_final_r_2[j,j])
-                elif np.absolute(z)<=lam_2:
-                    theta_22[j]=0
+            if z>lam_2:
+                theta_22[j]=-(z-lam_2)/(np.linalg.norm(S_2_best_j,ord=2)**2+gamma*diag_sigma_2_final_r_2[j,j])
+            elif np.absolute(z)<=lam_2:
+                theta_22[j]=0
             else:
-                if np.absolute(z)>lam_2:
-                    theta_22[j]=(np.absolute(z)-lam_2)/(np.linalg.norm(S_2_best_j,ord=2)**2+gamma*diag_sigma_2_final_r_2[j,j])
-                elif np.absolute(z)<=lam_2:
-                    theta_22[j]=0
+                theta_22[j]=(z+lam_2)/(np.linalg.norm(S_2_best_j,ord=2)**2+gamma*diag_sigma_2_final_r_2[j,j])
+
 
         #誤差をとる
         hat_y=theta_1.dot(S_J_best)+theta_21.dot(S_1_best)+theta_22.dot(S_2_best)
         erro=np.linalg.norm(y_original-hat_y,ord=2)**2
         erro_y_lis.append(erro)
 
-        if erro<erro_best:
-            erro_best=erro
-            theta_1_best=theta_1
-            theta_21_best=theta_21
-            theta_22_best=theta_22
-            hat_y_best=hat_y
-
-        if erro<threshold:
-            break
-    
-    return erro_y_lis,erro_best,theta_1_best,theta_21_best,theta_22_best,hat_y_best
-
-
-def pcLasso_sJIVE(eta,times,r_J,r_1,r_2,gamma_1,gamma_21,gamma_22,X_1_or,X_2_or,y_or,threshold):
-    number_best=0
-    times=times
-    erro_lis=[]
-    erro_best=1000.0
-    threshold=threshold
-    p_1=X_1_or.shape[0]
-    p_2=X_2_or.shape[0]
-    n=X_1_or.shape[1]
-    X_1=math.sqrt(eta)*X_1_or
-    X_2=math.sqrt(eta)*X_2_or
-    y=math.sqrt(1-eta)*y_or
-    #初期値を入れる
-    U_1=U_1_best=math.sqrt(eta)*np.random.uniform(low=-0.1, high=0.1, size=(p_1,r_J))
-    U_2=U_2_best=math.sqrt(eta)*np.random.uniform(low=-0.1, high=0.1, size=(p_2,r_J))
-    W_1=W_1_best=math.sqrt(eta)*np.random.uniform(low=-0.1, high=0.1, size=(p_1,r_1))
-    W_2=W_2_best=math.sqrt(eta)*np.random.uniform(low=-0.1, high=0.1, size=(p_2,r_2))
-    theta_1=theta_1_best=math.sqrt(1-eta)*np.random.uniform(low=-0.1, high=0.1, size=int(r_J))
-    theta_21=theta_21_best=math.sqrt(1-eta)*np.random.uniform(low=-0.1, high=0.1, size=int(r_1))
-    theta_22=theta_22_best=math.sqrt(1-eta)*np.random.uniform(low=-0.1, high=0.1, size=int(r_2))
-    S_J=S_J_best=np.random.uniform(low=-0.1, high=0.1, size=(r_J,n))
-    S_1=S_1_best=np.random.uniform(low=-0.1, high=0.1, size=(r_1,n))
-    S_2=S_2_best=np.random.uniform(low=-0.1, high=0.1, size=(r_2,n))
-    hat_X_y_best=np.random.uniform(low=-0.1, high=0.1, size=(p_1+p_2+1,n))
-
-    zeros_1=np.zeros((p_2, r_1))
-    zeros_2=np.zeros((p_1, r_2))
-
-    for i in tqdm.tqdm(range(times)):
-        #以下を誤差が収束するまで繰り返し
-        #S_Jを更新
-        U_theta_1=np.row_stack((U_1,U_2,theta_1)) #1
-        X_y=np.row_stack((X_1,X_2,y)) #2
-        W_1_S_1=W_1.dot(S_1)
-        W_2_S_2=W_2.dot(S_2)
-        theta_2i_S_i=theta_21.dot(S_1)+theta_22.dot(S_2)
-        W_theta_2i_S_i=np.row_stack((W_1_S_1,W_2_S_2,theta_2i_S_i)) #3
-        S_J=U_theta_1.T.dot(X_y-W_theta_2i_S_i) #1,2,3からS_Jを更新
-
-        #推定値を計算
-        U_theta_1=np.row_stack((U_1,U_2,theta_1))
-        W_1_theta_21=np.row_stack((W_1,zeros_1,theta_21))
-        W_2_theta_22=np.row_stack((zeros_2,W_2,theta_22))
-        hat_X_y=U_theta_1.dot(S_J)+W_1_theta_21.dot(S_1)+W_2_theta_22.dot(S_2) #1,2,3から推定値を算出
-        #誤差を計算
-        X_y=np.row_stack((X_1,X_2,y))
-        erro=np.linalg.norm(X_y-hat_X_y,ord=2)**2
-        erro_lis.append(erro)
-
-        if erro<erro_best:
-            number_best=i
-            erro_best=erro
-            S_J_best=S_J
-            U_1_best=U_1
-            U_2_best=U_2
-            theta_1_best=theta_1
-            S_1_best=S_1
-            W_1_best=W_1
-            theta_21_best=theta_21
-            S_2_best=S_1
-            W_2_best=W_2
-            theta_22_best=theta_22
-            hat_X_y_best=hat_X_y
-
-        if erro<threshold:
-            break
-
-        #U_1,U_2,theta_1を更新
-        ##特異値分解
-        X_y_joint=X_y-W_theta_2i_S_i
-        U_J,sigma_J,VT_J=np.linalg.svd(X_y_joint,full_matrices=False) #特異値分解を行う
-        U_1=U_J[:p_1,:r_J]
-        U_2=U_J[p_1:p_1+p_2,:r_J]
-
-        ##theta_1の更新
-        pcLasso_sigma_J=[]
-        for i in range(len(sigma_J)):
-            a_i=sigma_J[0]**2-sigma_J[i]**2
-            pcLasso_sigma_J.append(a_i)
-        sigma_J_final=[1/(sigma_J[i]**2+(gamma_1/2)*pcLasso_sigma_J[i]) for i in range(len(sigma_J))]
-        diag_sigma_J_final=np.diag(sigma_J_final)
-        diag_sigma_J_final_r_J=diag_sigma_J_final[:r_J,:r_J]
-        theta_1=(y-(theta_21.dot(S_1)+theta_22.dot(S_2))).dot(S_J.T).dot(diag_sigma_J_final_r_J)
-
-        ##正規化
-        U_theta_1=np.row_stack((U_1,U_2,theta_1))
-        U_theta_1=U_theta_1/np.linalg.norm(U_theta_1)
-        U_1=U_theta_1[:p_1,:]
-        U_2=U_theta_1[p_1:p_1+p_2,:]
-        theta_1=U_theta_1[p_1+p_2:,:]
-        U_theta_1=np.row_stack((U_1,U_2,theta_1))
-
-        #推定値を計算
-        U_theta_1=np.row_stack((U_1,U_2,theta_1))
-        W_1_theta_21=np.row_stack((W_1,zeros_1,theta_21))
-        W_2_theta_22=np.row_stack((zeros_2,W_2,theta_22))
-        hat_X_y=U_theta_1.dot(S_J)+W_1_theta_21.dot(S_1)+W_2_theta_22.dot(S_2) #1,2,3から推定値を算出
-        #誤差を計算
-        X_y=np.row_stack((X_1,X_2,y))
-        erro=np.linalg.norm(X_y-hat_X_y,ord=2)**2
-        erro_lis.append(erro)
-
-        if erro<erro_best:
-            number_best=i
-            erro_best=erro
-            S_J_best=S_J
-            U_1_best=U_1
-            U_2_best=U_2
-            theta_1_best=theta_1
-            S_1_best=S_1
-            W_1_best=W_1
-            theta_21_best=theta_21
-            S_2_best=S_1
-            W_2_best=W_2
-            theta_22_best=theta_22
-            hat_X_y_best=hat_X_y
-
-        if erro<threshold:
-            break
-        
-        #S_1を更新
-        W_1_theta_21=np.row_stack((W_1,theta_21)) #1
-        y_theta_22S_2=y-theta_22.dot(S_2)
-        X_1_y_theta_22S_2=np.row_stack((X_1,y_theta_22S_2)) #2
-        U_1_S_J=U_1.dot(S_J)
-        theta_1_S_J=theta_1.dot(S_J)
-        U_1_S_J_theta_1_S_J=np.row_stack((U_1_S_J,theta_1_S_J)) #3
-        P_SJ=S_J.T.dot(np.linalg.inv(S_J.dot(S_J.T))).dot(S_J)
-        diag_matrix = np.diag([1] * n)
-        P_SJ_C=diag_matrix-P_SJ #Jointの直交補空間を作成 #4
-        S_1=W_1_theta_21.T.dot((X_1_y_theta_22S_2-U_1_S_J_theta_1_S_J)).dot(P_SJ_C) #1,2,3,4からS_1を更新
-
-        #推定値を計算
-        U_theta_1=np.row_stack((U_1,U_2,theta_1))
-        W_1_theta_21=np.row_stack((W_1,zeros_1,theta_21))
-        W_2_theta_22=np.row_stack((zeros_2,W_2,theta_22))
-        hat_X_y=U_theta_1.dot(S_J)+W_1_theta_21.dot(S_1)+W_2_theta_22.dot(S_2) #1,2,3から推定値を算出
-        #誤差を計算
-        X_y=np.row_stack((X_1,X_2,y))
-        erro=np.linalg.norm(X_y-hat_X_y,ord=2)**2
-        erro_lis.append(erro)
-
-        if erro<erro_best:
-            number_best=i
-            erro_best=erro
-            S_J_best=S_J
-            U_1_best=U_1
-            U_2_best=U_2
-            theta_1_best=theta_1
-            S_1_best=S_1
-            W_1_best=W_1
-            theta_21_best=theta_21
-            S_2_best=S_1
-            W_2_best=W_2
-            theta_22_best=theta_22
-            hat_X_y_best=hat_X_y
-
-
-        if erro<threshold:
-            break
-
-        #W_1,theta_21を更新
-        ##特異値分解
-        U_I_1,sigma_1,VT_1=np.linalg.svd((X_1_y_theta_22S_2-U_1_S_J_theta_1_S_J).dot(P_SJ_C),full_matrices=False) #特異値分解を行う
-        W_1=U_I_1[:p_1,:r_1]
-        zeros_1=np.zeros((p_2, r_1))
-        ##提案手法の更新
-        pcLasso_sigma_1=[]
-        for i in range(len(sigma_1)):
-            a_i=sigma_1[0]**2-sigma_1[i]**2
-            pcLasso_sigma_1.append(a_i)
-        sigma_1_final=[1/(sigma_1[i]**2+(gamma_21/2)*pcLasso_sigma_1[i]) for i in range(len(sigma_1))]
-        diag_sigma_1_final=np.diag(sigma_1_final)
-        diag_sigma_1_final_r_1=diag_sigma_1_final[:r_1,:r_1]
-        theta_21=(y-(theta_1.dot(S_J)+theta_22.dot(S_2))).dot(S_1.T).dot(diag_sigma_1_final_r_1)
-        ##正規化
-        W_1_theta_21=np.row_stack((W_1,zeros_1,theta_21))
-        W_1_theta_21=W_1_theta_21/np.linalg.norm(W_1_theta_21)
-        W_1=W_1_theta_21[:p_1,:]
-        theta_21=W_1_theta_21[p_1+p_2:,:]
-        W_1_theta_21=np.row_stack((W_1,zeros_1,theta_21))
-
-
-        #推定値を計算
-        U_theta_1=np.row_stack((U_1,U_2,theta_1))
-        W_1_theta_21=np.row_stack((W_1,zeros_1,theta_21))
-        W_2_theta_22=np.row_stack((zeros_2,W_2,theta_22))
-        hat_X_y=U_theta_1.dot(S_J)+W_1_theta_21.dot(S_1)+W_2_theta_22.dot(S_2) #1,2,3から推定値を算出
-        #誤差を計算
-        X_y=np.row_stack((X_1,X_2,y))
-        erro=np.linalg.norm(X_y-hat_X_y,ord=2)**2
-        erro_lis.append(erro)
-
-        if erro<erro_best:
-            number_best=i
-            erro_best=erro
-            S_J_best=S_J
-            U_1_best=U_1
-            U_2_best=U_2
-            theta_1_best=theta_1
-            S_1_best=S_1
-            W_1_best=W_1
-            theta_21_best=theta_21
-            S_2_best=S_1
-            W_2_best=W_2
-            theta_22_best=theta_22
-            hat_X_y_best=hat_X_y
-
-        if erro<threshold:
-            break
-
-
-        #S_2を更新
-        W_2_theta_22=np.row_stack((W_2,theta_22)) #1
-        y_theta_21S_1=y-theta_21.dot(S_1)
-        X_2_y_theta_21S_1=np.row_stack((X_2,y_theta_21S_1)) #2
-        U_2_S_J=U_2.dot(S_J)
-        theta_1_S_J=theta_1.dot(S_J)
-        U_2_S_J_theta_1_S_J=np.row_stack((U_2_S_J,theta_1_S_J)) #3
-        S_2=W_2_theta_22.T.dot(X_2_y_theta_21S_1-U_2_S_J_theta_1_S_J).dot(P_SJ_C) #1,2,3からS_2を更新
-
-        #推定値を計算
-        U_theta_1=np.row_stack((U_1,U_2,theta_1))
-        W_1_theta_21=np.row_stack((W_1,zeros_1,theta_21))
-        W_2_theta_22=np.row_stack((zeros_2,W_2,theta_22))
-        hat_X_y=U_theta_1.dot(S_J)+W_1_theta_21.dot(S_1)+W_2_theta_22.dot(S_2) #1,2,3から推定値を算出
-        #誤差を計算
-        X_y=np.row_stack((X_1,X_2,y))
-        erro=np.linalg.norm(X_y-hat_X_y,ord=2)**2
-        erro_lis.append(erro)
-
-        if erro<erro_best:
-            number_best=i
-            erro_best=erro
-            S_J_best=S_J
-            U_1_best=U_1
-            U_2_best=U_2
-            theta_1_best=theta_1
-            S_1_best=S_1
-            W_1_best=W_1
-            theta_21_best=theta_21
-            S_2_best=S_1
-            W_2_best=W_2
-            theta_22_best=theta_22
-            hat_X_y_best=hat_X_y
-
-        if erro<threshold:
-            break
-
-
-        #W_1,theta_21を更新
-        ##特異値分解
-        U_I_2,sigma_2,VT_2=np.linalg.svd((X_2_y_theta_21S_1-U_2_S_J_theta_1_S_J).dot(P_SJ_C),full_matrices=False) #特異値分解を行う
-        zeros_2=np.zeros((p_1, r_2))
-        W_2=U_I_2[:p_2,:r_2]
-        ##提案手法の更新
-        pcLasso_sigma_2=[]
-        for i in range(len(sigma_2)):
-            a_i=sigma_2[0]**2-sigma_2[i]**2
-            pcLasso_sigma_2.append(a_i)
-        sigma_2_final=[1/(sigma_2[i]**2+(gamma_22/2)*pcLasso_sigma_2[i]) for i in range(len(sigma_2))]
-        diag_sigma_2_final=np.diag(sigma_2_final)
-        diag_sigma_2_final_r_2=diag_sigma_2_final[:r_2,:r_2]
-        theta_22=(y-(theta_1.dot(S_J)+theta_21.dot(S_1))).dot(S_2.T).dot(diag_sigma_2_final_r_2)
-        ##正規化
-        W_2_theta_22=np.row_stack((zeros_2,W_2,theta_22))
-        W_2_theta_22=W_2_theta_22/np.linalg.norm(W_2_theta_22)
-        W_2=W_2_theta_22[p_1:p_1+p_2,:]
-        theta_22=W_2_theta_22[p_1+p_2:,:]
-        W_2_theta_22=np.row_stack((zeros_2,W_2,theta_22))
-
-        #推定値を計算
-        hat_X_y=U_theta_1.dot(S_J)+W_1_theta_21.dot(S_1)+W_2_theta_22.dot(S_2) #1,2,3から推定値を算出
-        #誤差を計算
-        X_y=np.row_stack((X_1,X_2,y))
-        erro=np.linalg.norm(X_y-hat_X_y,ord=2)**2
-        erro_lis.append(erro)
-
-        if erro<erro_best:
-            number_best=i
-            erro_best=erro
-            S_J_best=S_J
-            U_1_best=U_1
-            U_2_best=U_2
-            theta_1_best=theta_1
-            S_1_best=S_1
-            W_1_best=W_1
-            theta_21_best=theta_21
-            S_2_best=S_1
-            W_2_best=W_2
-            theta_22_best=theta_22
-            hat_X_y_best=hat_X_y
-
-        if erro<threshold:
-            break
-
-
-    return erro_lis,number_best,erro_best,S_J_best,U_1_best,U_2_best,theta_1_best,S_1_best,W_1_best,theta_21_best,S_2_best,W_2_best,theta_22_best,hat_X_y_best
-
-def pcLasso_sJIVE_2(eta,times,r_J,r_1,r_2,gamma_1,gamma_21,gamma_22,X_1_or,X_2_or,y_or,threshold):
-    number_best=0
-    times=times
-    erro_lis=[]
-    erro_best=1000.0
-    threshold=threshold
-    p_1=X_1_or.shape[0]
-    p_2=X_2_or.shape[0]
-    n=X_1_or.shape[1]
-    X_1=math.sqrt(eta)*X_1_or
-    X_2=math.sqrt(eta)*X_2_or
-    y=math.sqrt(1-eta)*y_or
-    #初期値を入れる
-    U_1=U_1_best=math.sqrt(eta)*np.random.uniform(low=-0.1, high=0.1, size=(p_1,r_J))
-    U_2=U_2_best=math.sqrt(eta)*np.random.uniform(low=-0.1, high=0.1, size=(p_2,r_J))
-    W_1=W_1_best=math.sqrt(eta)*np.random.uniform(low=-0.1, high=0.1, size=(p_1,r_1))
-    W_2=W_2_best=math.sqrt(eta)*np.random.uniform(low=-0.1, high=0.1, size=(p_2,r_2))
-    theta_1=theta_1_best=math.sqrt(1-eta)*np.random.uniform(low=-0.1, high=0.1, size=int(r_J))
-    theta_21=theta_21_best=math.sqrt(1-eta)*np.random.uniform(low=-0.1, high=0.1, size=int(r_1))
-    theta_22=theta_22_best=math.sqrt(1-eta)*np.random.uniform(low=-0.1, high=0.1, size=int(r_2))
-    S_J=S_J_best=np.random.uniform(low=-0.1, high=0.1, size=(r_J,n))
-    S_1=S_1_best=np.random.uniform(low=-0.1, high=0.1, size=(r_1,n))
-    S_2=S_2_best=np.random.uniform(low=-0.1, high=0.1, size=(r_2,n))
-    hat_X_y_best=np.random.uniform(low=-0.1, high=0.1, size=(p_1+p_2+1,n))
-
-    zeros_1=np.zeros((p_2, r_1))
-    zeros_2=np.zeros((p_1, r_2))
-
-    for i in tqdm.tqdm(range(times)):
-        #以下を誤差が収束するまで繰り返し
-        #S_Jを更新
-        X_y=np.row_stack((X_1,X_2,y))
-        U_theta_1=np.row_stack((U_1,U_2,theta_1)) #1
-        W_1_S_1=W_1.dot(S_1) 
-        W_2_S_2=W_2.dot(S_2)
-        theta_2i_S_i=theta_21.dot(S_1)+theta_22.dot(S_2) 
-        W_theta_2i_S_i=np.row_stack((W_1_S_1,W_2_S_2,theta_2i_S_i)) #2
-        X_y_joint=X_y-W_theta_2i_S_i #1,2からjoint空間を算出
-        U_J,sigma_J,VT_J=np.linalg.svd(X_y_joint,full_matrices=False) #特異値分解を行う
-        S_J=VT_J[:r_J,:]
-
-        #推定値を計算
-        U_theta_1=np.row_stack((U_1,U_2,theta_1))
-        W_1_theta_21=np.row_stack((W_1,zeros_1,theta_21))
-        W_2_theta_22=np.row_stack((zeros_2,W_2,theta_22))
-        hat_X_y=U_theta_1.dot(S_J)+W_1_theta_21.dot(S_1)+W_2_theta_22.dot(S_2) #1,2,3から推定値を算出
-        #誤差を計算
-        X_y=np.row_stack((X_1,X_2,y))
-        erro=np.linalg.norm(X_y-hat_X_y,ord=2)**2
-        erro_lis.append(erro)
-
-        if erro<erro_best:
-            number_best=i
-            erro_best=erro
-            S_J_best=S_J
-            U_1_best=U_1
-            U_2_best=U_2
-            theta_1_best=theta_1
-            S_1_best=S_1
-            W_1_best=W_1
-            theta_21_best=theta_21
-            S_2_best=S_1
-            W_2_best=W_2
-            theta_22_best=theta_22
-            hat_X_y_best=hat_X_y
-
-        if erro<threshold:
-            break
-
-        #U_1,U_2,theta_1を更新
-        ##U_1,U_2を更新
-        X=np.row_stack((X_1,X_2)) #2
-        W_1_S_1=W_1.dot(S_1)
-        W_2_S_2=W_2.dot(S_2)
-        W_S=np.row_stack((W_1_S_1,W_2_S_2)) #3
-        U=(X-W_S).dot(S_J.T) #1,2,3からU_theta_1を更新
-        U_1=U[:p_1,:]
-        U_2=U[p_1:p_1+p_2,:]
-
-        ##theta_1を更新
-        pcLasso_sigma_J=[]
-        for i in range(len(sigma_J)):
-            a_i=sigma_J[0]**2-sigma_J[i]**2
-            pcLasso_sigma_J.append(a_i)
-        sigma_J_final=[1/(sigma_J[i]**2+(gamma_1/2)*pcLasso_sigma_J[i]) for i in range(len(sigma_J))]
-        diag_sigma_J_final=np.diag(sigma_J_final)
-        diag_sigma_J_final_r_J=diag_sigma_J_final[:r_J,:r_J]
-        theta_1=(y-(theta_21.dot(S_1)+theta_22.dot(S_2))).dot(S_J.T).dot(diag_sigma_J_final_r_J)
-
-        #推定値を計算
-        U_theta_1=np.row_stack((U_1,U_2,theta_1))
-        W_1_theta_21=np.row_stack((W_1,zeros_1,theta_21))
-        W_2_theta_22=np.row_stack((zeros_2,W_2,theta_22))
-        hat_X_y=U_theta_1.dot(S_J)+W_1_theta_21.dot(S_1)+W_2_theta_22.dot(S_2) #1,2,3から推定値を算出
-        #誤差を計算
-        X_y=np.row_stack((X_1,X_2,y))
-        erro=np.linalg.norm(X_y-hat_X_y,ord=2)**2
-        erro_lis.append(erro)
-
-        if erro<erro_best:
-            number_best=i
-            erro_best=erro
-            S_J_best=S_J
-            U_1_best=U_1
-            U_2_best=U_2
-            theta_1_best=theta_1
-            S_1_best=S_1
-            W_1_best=W_1
-            theta_21_best=theta_21
-            S_2_best=S_1
-            W_2_best=W_2
-            theta_22_best=theta_22
-            hat_X_y_best=hat_X_y
-
-        if erro<threshold:
-            break
-
-        #S_1を更新
-        y_theta_22S_2=y-theta_22.dot(S_2)
-        X_1_y_theta_22S_2=np.row_stack((X_1,y_theta_22S_2)) #1
-        U_1_S_J=U_1.dot(S_J)
-        theta_1_S_J=theta_1.dot(S_J)
-        U_1_S_J_theta_1_S_J=np.row_stack((U_1_S_J,theta_1_S_J)) #2
-        P_SJ=S_J.T.dot(np.linalg.inv(S_J.dot(S_J.T))).dot(S_J)
-        diag_matrix = np.diag([1] * n)
-        P_SJ_C=diag_matrix-P_SJ #Jointの直交補空間を作成 #3
-        X_y_indivi_1=(X_1_y_theta_22S_2-U_1_S_J_theta_1_S_J).dot(P_SJ_C)
-        U_I_1,sigma_1,VT_I_1=np.linalg.svd(X_y_indivi_1,full_matrices=False) #特異値分解を行う
-        S_1=VT_I_1[:r_1,:]
-
-        #推定値を計算
-        U_theta_1=np.row_stack((U_1,U_2,theta_1))
-        W_1_theta_21=np.row_stack((W_1,zeros_1,theta_21))
-        W_2_theta_22=np.row_stack((zeros_2,W_2,theta_22))
-        hat_X_y=U_theta_1.dot(S_J)+W_1_theta_21.dot(S_1)+W_2_theta_22.dot(S_2) #1,2,3から推定値を算出
-        #誤差を計算
-        X_y=np.row_stack((X_1,X_2,y))
-        erro=np.linalg.norm(X_y-hat_X_y,ord=2)**2
-        erro_lis.append(erro)
-
-        if erro<erro_best:
-            number_best=i
-            erro_best=erro
-            S_J_best=S_J
-            U_1_best=U_1
-            U_2_best=U_2
-            theta_1_best=theta_1
-            S_1_best=S_1
-            W_1_best=W_1
-            theta_21_best=theta_21
-            S_2_best=S_1
-            W_2_best=W_2
-            theta_22_best=theta_22
-            hat_X_y_best=hat_X_y
-
-        if erro<threshold:
-            break
-
-        #W_1,theta_21を更新
-        ##W_1から更新
-        W_1=(X_1-U_1.dot(S_J)).dot(S_1.T)
-        ##theta_21を更新
-        pcLasso_sigma_1=[]
-        for i in range(len(sigma_1)):
-            a_i=sigma_1[0]**2-sigma_1[i]**2
-            pcLasso_sigma_1.append(a_i)
-        sigma_1_final=[1/(sigma_1[i]**2+(gamma_21/2)*pcLasso_sigma_1[i]) for i in range(len(sigma_1))]
-        diag_sigma_1_final=np.diag(sigma_1_final)
-        diag_sigma_1_final_r_1=diag_sigma_1_final[:r_1,:r_1]
-        theta_21=(y-(theta_1.dot(S_J)+theta_22.dot(S_2))).dot(S_1.T).dot(diag_sigma_1_final_r_1)
-
-        #推定値を計算
-        U_theta_1=np.row_stack((U_1,U_2,theta_1))
-        W_1_theta_21=np.row_stack((W_1,zeros_1,theta_21))
-        W_2_theta_22=np.row_stack((zeros_2,W_2,theta_22))
-        hat_X_y=U_theta_1.dot(S_J)+W_1_theta_21.dot(S_1)+W_2_theta_22.dot(S_2) #1,2,3から推定値を算出
-        #誤差を計算
-        X_y=np.row_stack((X_1,X_2,y))
-        erro=np.linalg.norm(X_y-hat_X_y,ord=2)**2
-        erro_lis.append(erro)
-
-        if erro<erro_best:
-            number_best=i
-            erro_best=erro
-            S_J_best=S_J
-            U_1_best=U_1
-            U_2_best=U_2
-            theta_1_best=theta_1
-            S_1_best=S_1
-            W_1_best=W_1
-            theta_21_best=theta_21
-            S_2_best=S_1
-            W_2_best=W_2
-            theta_22_best=theta_22
-            hat_X_y_best=hat_X_y
-
-        if erro<threshold:
-            break
-
-        #S_2を更新
-        y_theta_21S_1=y-theta_21.dot(S_1)
-        X_2_y_theta_21S_1=np.row_stack((X_2,y_theta_21S_1)) #1
-        U_2_S_J=U_2.dot(S_J)
-        theta_1_S_J=theta_1.dot(S_J)
-        U_2_S_J_theta_1_S_J=np.row_stack((U_2_S_J,theta_1_S_J)) #2
-        P_SJ=S_J.T.dot(np.linalg.inv(S_J.dot(S_J.T))).dot(S_J)
-        diag_matrix = np.diag([1] * n)
-        P_SJ_C=diag_matrix-P_SJ #Jointの直交補空間を作成 #3
-        X_y_indivi_1=(X_2_y_theta_21S_1-U_2_S_J_theta_1_S_J).dot(P_SJ_C)
-        U_I_2,sigma_2,VT_I_2=np.linalg.svd(X_y_indivi_1,full_matrices=False) #特異値分解を行う
-        S_2=VT_I_2[:r_2,:]
-
-        #推定値を計算
-        U_theta_1=np.row_stack((U_1,U_2,theta_1))
-        W_1_theta_21=np.row_stack((W_1,zeros_1,theta_21))
-        W_2_theta_22=np.row_stack((zeros_2,W_2,theta_22))
-        hat_X_y=U_theta_1.dot(S_J)+W_1_theta_21.dot(S_1)+W_2_theta_22.dot(S_2) #1,2,3から推定値を算出
-        #誤差を計算
-        X_y=np.row_stack((X_1,X_2,y))
-        erro=np.linalg.norm(X_y-hat_X_y,ord=2)**2
-        erro_lis.append(erro)
-
-        if erro<erro_best:
-            number_best=i
-            erro_best=erro
-            S_J_best=S_J
-            U_1_best=U_1
-            U_2_best=U_2
-            theta_1_best=theta_1
-            S_1_best=S_1
-            W_1_best=W_1
-            theta_21_best=theta_21
-            S_2_best=S_1
-            W_2_best=W_2
-            theta_22_best=theta_22
-            hat_X_y_best=hat_X_y
-
-        if erro<threshold:
-            break
-
-        #W_2,theta_22を更新
-        ##W_2から更新
-        W_2=(X_2-U_2.dot(S_J)).dot(S_2.T)
-        ##theta_22を更新
-        pcLasso_sigma_2=[]
-        for i in range(len(sigma_2)):
-            a_i=sigma_2[0]**2-sigma_2[i]**2
-            pcLasso_sigma_2.append(a_i)
-        sigma_2_final=[1/(sigma_2[i]**2+(gamma_22/2)*pcLasso_sigma_2[i]) for i in range(len(sigma_2))]
-        diag_sigma_2_final=np.diag(sigma_2_final)
-        diag_sigma_2_final_r_2=diag_sigma_2_final[:r_2,:r_2]
-        theta_22=(y-(theta_1.dot(S_J)+theta_21.dot(S_1))).dot(S_2.T).dot(diag_sigma_2_final_r_2)
-
-        #推定値を計算
-        U_theta_1=np.row_stack((U_1,U_2,theta_1))
-        W_1_theta_21=np.row_stack((W_1,zeros_1,theta_21))
-        W_2_theta_22=np.row_stack((zeros_2,W_2,theta_22))
-        hat_X_y=U_theta_1.dot(S_J)+W_1_theta_21.dot(S_1)+W_2_theta_22.dot(S_2) #1,2,3から推定値を算出
-        #誤差を計算
-        X_y=np.row_stack((X_1,X_2,y))
-        erro=np.linalg.norm(X_y-hat_X_y,ord=2)**2
-        erro_lis.append(erro)
-
-        if erro<erro_best:
-            number_best=i
-            erro_best=erro
-            S_J_best=S_J
-            U_1_best=U_1
-            U_2_best=U_2
-            theta_1_best=theta_1
-            S_1_best=S_1
-            W_1_best=W_1
-            theta_21_best=theta_21
-            S_2_best=S_1
-            W_2_best=W_2
-            theta_22_best=theta_22
-            hat_X_y_best=hat_X_y
-
-        if erro<threshold:
-            break
-
-    return erro_lis,number_best,erro_best,S_J_best,U_1_best,U_2_best,theta_1_best,S_1_best,W_1_best,theta_21_best,S_2_best,W_2_best,theta_22_best,hat_X_y_best
-
-#テストデータに対する予測モデル
-def pcLasso_sJIVE_prediction(X_1_tes,X_2_tes,y_tes,U_1_best,U_2_best,W_1_best,W_2_best,theta_1_best,theta_21_best,theta_22_best,times_tes,threshold_tes):
-    n_tes=X_1_tes.shape[1]
-    r_J=U_1_best.shape[1]
-    r_1=W_1_best.shape[1]
-    r_2=W_2_best.shape[1]
-
-    times_tes=times_tes
-    erro_tes_best=100
-    erro_tes_lis=[]
-
-    U_1_hat=U_1_best
-    U_2_hat=U_2_best
-    U_hat=np.row_stack((U_1_hat,U_2_hat))
-
-    W_1_hat=W_1_best
-    W_2_hat=W_2_best
-
-    theta_1_hat=theta_1_best
-    theta_21_hat=theta_21_best
-    theta_22_hat=theta_22_best
-
-    X_new=np.row_stack((X_1_tes,X_2_tes))
-
-    S_J_new=S_J_new_best=np.random.uniform(low=-0.1, high=0.1, size=(r_J,n_tes))
-    S_1_new=S_1_new_best=np.random.uniform(low=-0.1, high=0.1, size=(r_1,n_tes))
-    S_2_new=S_2_new_best=np.random.uniform(low=-0.1, high=0.1, size=(r_2,n_tes))
-
-
-    for j in tqdm.tqdm(range(times_tes)):
-        #推定
-        W_1_S_1_new=W_1_hat.dot(S_1_new)
-        W_2_S_2_new=W_2_hat.dot(S_2_new)
-        W_S_new=np.row_stack((W_1_S_1_new,W_2_S_2_new))
-
-        S_J_new=U_hat.T.dot(X_new-W_S_new)
-
-        #推定値を計算
-        hat_X_1_tes=U_1_hat.dot(S_J_new)+W_1_hat.dot(S_1_new)
-        hat_X_2_tes=U_2_hat.dot(S_J_new)+W_2_hat.dot(S_2_new)
-        hat_X_tes=np.row_stack((hat_X_1_tes,hat_X_2_tes))
-
-        #誤差を計算
-        erro_tes=np.linalg.norm(X_1_tes-hat_X_1_tes)**2+np.linalg.norm(X_2_tes-hat_X_2_tes)**2
-        erro_tes_lis.append(erro_tes)
-
-        if erro_tes<erro_tes_best:
-            erro_tes_best=erro_tes
-            S_J_new_best=S_J_new
-            S_1_new_best=S_1_new
-            S_2_new_best=S_2_new
-
-        if erro_tes<threshold_tes:
-            break
-
-        S_1_new=W_1_hat.T.dot(X_1_tes-U_1_hat.dot(S_J_new))
-
-        #推定値を計算
-        hat_X_1_tes=U_1_hat.dot(S_J_new)+W_1_hat.dot(S_1_new)
-        hat_X_2_tes=U_2_hat.dot(S_J_new)+W_2_hat.dot(S_2_new)
-        hat_X_tes=np.row_stack((hat_X_1_tes,hat_X_2_tes))
-        
-        #誤差を計算
-        erro_tes=np.linalg.norm(X_1_tes-hat_X_1_tes)**2+np.linalg.norm(X_2_tes-hat_X_2_tes)**2
-        erro_tes_lis.append(erro_tes)
-
-        if erro_tes<erro_tes_best:
-            erro_tes_best=erro_tes
-            S_J_new_best=S_J_new
-            S_1_new_best=S_1_new
-            S_2_new_best=S_2_new
-
-        if erro_tes<threshold_tes:
-            break
-
-
-        S_2_new=W_2_hat.T.dot(X_2_tes-U_2_hat.dot(S_J_new))
-        #推定値を計算
-        hat_X_1_tes=U_1_hat.dot(S_J_new)+W_1_hat.dot(S_1_new)
-        hat_X_2_tes=U_2_hat.dot(S_J_new)+W_2_hat.dot(S_2_new)
-        hat_X_tes=np.row_stack((hat_X_1_tes,hat_X_2_tes))
-
-        #誤差を計算
-        erro_tes=np.linalg.norm(X_1_tes-hat_X_1_tes)**2+np.linalg.norm(X_2_tes-hat_X_2_tes)**2
-        erro_tes_lis.append(erro_tes)
-
-        if erro_tes<erro_tes_best:
-            erro_tes_best=erro_tes
-            S_J_new_best=S_J_new
-            S_1_new_best=S_1_new
-            S_2_new_best=S_2_new
-
-        if erro_tes<threshold_tes:
-            break
-    
-    y_new=theta_1_hat.dot(S_J_new_best)+theta_21_hat.dot(S_1_new_best)+theta_22_hat.dot(S_2_new_best)
-    erro_result=np.linalg.norm(y_tes-y_new)**2
-
-    return erro_tes_lis,erro_tes_best,S_J_new_best,S_1_new_best,S_2_new_best,y_new,erro_result
-
-#テストデータに対する予測モデル
-def pcLasso_sJIVE_prediction_2(X_1_tes,X_2_tes,y_tes,U_1_best,U_2_best,W_1_best,W_2_best,theta_1_best,theta_21_best,theta_22_best,times_tes,threshold_tes):
-    n_tes=X_1_tes.shape[1]
-    r_J=U_1_best.shape[1]
-    r_1=W_1_best.shape[1]
-    r_2=W_2_best.shape[1]
-
-    times_tes=times_tes
-    erro_tes_best=100
-    erro_tes_lis=[]
-
-    U_1_hat=U_1_best
-    U_2_hat=U_2_best
-    U_hat=np.row_stack((U_1_hat,U_2_hat))
-
-    W_1_hat=W_1_best
-    W_2_hat=W_2_best
-
-    theta_1_hat=theta_1_best
-    theta_21_hat=theta_21_best
-    theta_22_hat=theta_22_best
-
-    X_new=np.row_stack((X_1_tes,X_2_tes))
-
-    S_J_new=S_J_new_best=np.random.uniform(low=-0.1, high=0.1, size=(r_J,n_tes))
-    S_1_new=S_1_new_best=np.random.uniform(low=-0.1, high=0.1, size=(r_1,n_tes))
-    S_2_new=S_2_new_best=np.random.uniform(low=-0.1, high=0.1, size=(r_2,n_tes))
-
-
-    for j in tqdm.tqdm(range(times_tes)):
-        #推定
-        W_1_S_1_new=W_1_hat.dot(S_1_new)
-        W_2_S_2_new=W_2_hat.dot(S_2_new)
-        W_S_new=np.row_stack((W_1_S_1_new,W_2_S_2_new))
-
-        S_J_new=U_hat.T.dot(X_new-W_S_new)
-
-        #推定値を計算
-        hat_X_1_tes=U_1_hat.dot(S_J_new)+W_1_hat.dot(S_1_new)
-        hat_X_2_tes=U_2_hat.dot(S_J_new)+W_2_hat.dot(S_2_new)
-        hat_X_tes=np.row_stack((hat_X_1_tes,hat_X_2_tes))
-
-        #誤差を計算
-        erro_tes=np.linalg.norm(X_1_tes-hat_X_1_tes)**2+np.linalg.norm(X_2_tes-hat_X_2_tes)**2
-        erro_tes_lis.append(erro_tes)
-
-        if erro_tes<erro_tes_best:
-            erro_tes_best=erro_tes
-            S_J_new_best=S_J_new
-            S_1_new_best=S_1_new
-            S_2_new_best=S_2_new
-
-        if erro_tes<threshold_tes:
-            break
-
-        S_1_new=W_1_hat.T.dot(X_1_tes-U_1_hat.dot(S_J_new))
-
-        #推定値を計算
-        hat_X_1_tes=U_1_hat.dot(S_J_new)+W_1_hat.dot(S_1_new)
-        hat_X_2_tes=U_2_hat.dot(S_J_new)+W_2_hat.dot(S_2_new)
-        hat_X_tes=np.row_stack((hat_X_1_tes,hat_X_2_tes))
-        
-        #誤差を計算
-        erro_tes=np.linalg.norm(X_1_tes-hat_X_1_tes)**2+np.linalg.norm(X_2_tes-hat_X_2_tes)**2
-        erro_tes_lis.append(erro_tes)
-
-        if erro_tes<erro_tes_best:
-            erro_tes_best=erro_tes
-            S_J_new_best=S_J_new
-            S_1_new_best=S_1_new
-            S_2_new_best=S_2_new
-
-        if erro_tes<threshold_tes:
-            break
-
-
-        S_2_new=W_2_hat.T.dot(X_2_tes-U_2_hat.dot(S_J_new))
-        #推定値を計算
-        hat_X_1_tes=U_1_hat.dot(S_J_new)+W_1_hat.dot(S_1_new)
-        hat_X_2_tes=U_2_hat.dot(S_J_new)+W_2_hat.dot(S_2_new)
-        hat_X_tes=np.row_stack((hat_X_1_tes,hat_X_2_tes))
-
-        #誤差を計算
-        erro_tes=np.linalg.norm(X_1_tes-hat_X_1_tes)**2+np.linalg.norm(X_2_tes-hat_X_2_tes)**2
-        erro_tes_lis.append(erro_tes)
-
-        if erro_tes<erro_tes_best:
-            erro_tes_best=erro_tes
-            S_J_new_best=S_J_new
-            S_1_new_best=S_1_new
-            S_2_new_best=S_2_new
-
-        if erro_tes<threshold_tes:
-            break
-    
-    y_new=theta_1_hat.dot(S_J_new_best)+theta_21_hat.dot(S_1_new_best)+theta_22_hat.dot(S_2_new_best)
-    erro_result=np.linalg.norm(y_tes-y_new)**2
-
-    return erro_tes_lis,erro_tes_best,S_J_new_best,S_1_new_best,S_2_new_best,y_new,erro_result
-
-
-#クロスバリデーション
-def cv_pcLasso_sJIVE(df_tra,eta,r_J,r_1,r_2,gamma_1,gamma_21,gamma_22,p_1,p_2,times,threshold,times_tes,threshold_tes):
+        # if erro<erro_best:
+        #     erro_best=erro
+        #     theta_1_best=theta_1
+        #     theta_21_best=theta_21
+        #     theta_22_best=theta_22
+        #     hat_y_best=hat_y
+
+        # if erro<threshold:
+        #     break
+    # erro_y_lis,erro_best,theta_1_best,theta_21_best,theta_22_best,hat_y_best
+
+    return erro_y_lis,erro,theta_1,theta_21,theta_22,hat_y
+
+def cv_W_sJIVE_decomposition(df_tra,r_J,r_1,r_2,p_1,p_2,times,threshold,times_tes,threshold_tes):
     k = 5
     kf = KFold(n_splits=k)
     lis_cv_best=[]
@@ -1710,19 +919,21 @@ def cv_pcLasso_sJIVE(df_tra,eta,r_J,r_1,r_2,gamma_1,gamma_21,gamma_22,p_1,p_2,ti
         X_2_or=train_data[p_1:p_1+p_2,:]
         y_or=train_data[p_1+p_2:,:]
 
-        erro_lis,number_best,erro_best,S_J_best,U_1_best,U_2_best,theta_1_best,S_1_best,W_1_best,theta_21_best,S_2_best,W_2_best,theta_22_best,hat_X_y_best=pcLasso_sJIVE_2(
-            eta,times,r_J,r_1,r_2,gamma_1,gamma_21,gamma_22,X_1_or=X_1_or,X_2_or=X_2_or,y_or=y_or,threshold=threshold
+        erro_lis,number_best,erro_best,S_J_best,U_1_best,U_2_best,theta_1_best,S_1_best,W_1_best,theta_21_best,S_2_best,W_2_best,theta_22_best,hat_X_y_best=sJIVE(
+            eta,times,r_J,r_1,r_2,X_1_or=X_1_or,X_2_or=X_2_or,y_or=y_or,threshold=threshold
             )
         
         X_1_tes=test_data[:p_1,:]
         X_2_tes=test_data[p_1:p_1+p_2,:]
         y_tes=test_data[p_1+p_2:,:]
 
-        erro_tes_lis,erro_tes_best,S_J_new_best,S_1_new_best,S_2_new_best,y_new,erro_result=pcLasso_sJIVE_prediction(
+        erro_tes_lis,erro_tes_best,S_J_new_best,S_1_new_best,S_2_new_best,y_new,erro_result=sJIVE_prediction(
             X_1_tes,X_2_tes,y_tes,U_1_best,U_2_best,W_1_best,W_2_best,theta_1_best,theta_21_best,theta_22_best,times_tes,threshold_tes
             )
         lis_cv_best.append(erro_tes_best)
 
-    accuracy_pcLasso_sJIVE=np.mean(lis_cv_best)
+    accuracy_sJIVE=np.mean(lis_cv_best)
 
-    return accuracy_pcLasso_sJIVE
+    return accuracy_sJIVE
+
+
