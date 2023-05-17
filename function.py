@@ -170,12 +170,12 @@ def gene_data_2(p_1,p_2,n,r_J,r_1,r_2,r_prop,W_J_lis,W_1_lis,W_2_lis,X1_erro,X2_
     e_y=np.random.normal(loc=0, scale=np.sqrt(var_e_y), size=(1,n))
     y=y+e_y
     #標準化
-    ms = StandardScaler()
-    X_1_final = ms.fit_transform(X_1)
-    X_2_final = ms.fit_transform(X_2)
-    y_final=(y-np.mean(y))/np.std(y)
+    # ms = StandardScaler()
+    # X_1_final = ms.fit_transform(X_1)
+    # X_2_final = ms.fit_transform(X_2)
+    # y_final=(y-np.mean(y))/np.std(y)
 
-    return X_1_final,X_2_final,y_final
+    return X_1,X_2,y
 
 #sJIVEで近似
 def sJIVE(eta,times,r_J,r_1,r_2,X_1_or,X_2_or,y_or,threshold):
@@ -580,6 +580,9 @@ def W_sJIVE_decompositon_1(times,r_J,r_1,r_2,X_1_or,X_2_or,threshold):
     S_J=S_J_best=np.random.uniform(low=-0.1, high=0.1, size=(r_J,n))
     S_1=S_1_best=np.random.uniform(low=-0.1, high=0.1, size=(r_1,n))
     S_2=S_2_best=np.random.uniform(low=-0.1, high=0.1, size=(r_2,n))
+    M_J_best=VT_J=np.random.uniform(low=-0.1, high=0.1, size=(r_J,n))
+    M_1_best=VT_1=np.random.uniform(low=-0.1, high=0.1, size=(r_1,n))
+    M_2_best=VT_2=np.random.uniform(low=-0.1, high=0.1, size=(r_2,n))
     sigma_J=sigma_J_best=np.diag([1] * r_J)
     sigma_1=sigma_1_best=np.diag([1] * r_1)
     sigma_2=sigma_2_best=np.diag([1] * r_2)
@@ -614,6 +617,9 @@ def W_sJIVE_decompositon_1(times,r_J,r_1,r_2,X_1_or,X_2_or,threshold):
             W_1_best=W_1
             S_2_best=S_1
             W_2_best=W_2
+            M_J_best=VT_J
+            M_1_best=VT_1
+            M_2_best=VT_2
             sigma_J_best=sigma_J
             sigma_1_best=sigma_1
             sigma_2_best=sigma_2
@@ -646,6 +652,9 @@ def W_sJIVE_decompositon_1(times,r_J,r_1,r_2,X_1_or,X_2_or,threshold):
             W_1_best=W_1
             S_2_best=S_1
             W_2_best=W_2
+            M_J_best=VT_J
+            M_1_best=VT_1
+            M_2_best=VT_2
             sigma_J_best=sigma_J
             sigma_1_best=sigma_1
             sigma_2_best=sigma_2
@@ -679,6 +688,9 @@ def W_sJIVE_decompositon_1(times,r_J,r_1,r_2,X_1_or,X_2_or,threshold):
             W_1_best=W_1
             S_2_best=S_1
             W_2_best=W_2
+            M_J_best=VT_J
+            M_1_best=VT_1
+            M_2_best=VT_2
             sigma_J_best=sigma_J
             sigma_1_best=sigma_1
             sigma_2_best=sigma_2
@@ -711,6 +723,9 @@ def W_sJIVE_decompositon_1(times,r_J,r_1,r_2,X_1_or,X_2_or,threshold):
             W_1_best=W_1
             S_2_best=S_1
             W_2_best=W_2
+            M_J_best=VT_J
+            M_1_best=VT_1
+            M_2_best=VT_2
             sigma_J_best=sigma_J
             sigma_1_best=sigma_1
             sigma_2_best=sigma_2
@@ -744,6 +759,9 @@ def W_sJIVE_decompositon_1(times,r_J,r_1,r_2,X_1_or,X_2_or,threshold):
             W_1_best=W_1
             S_2_best=S_1
             W_2_best=W_2
+            M_J_best=VT_J
+            M_1_best=VT_1
+            M_2_best=VT_2
             sigma_J_best=sigma_J
             sigma_1_best=sigma_1
             sigma_2_best=sigma_2
@@ -776,6 +794,9 @@ def W_sJIVE_decompositon_1(times,r_J,r_1,r_2,X_1_or,X_2_or,threshold):
             W_1_best=W_1
             S_2_best=S_1
             W_2_best=W_2
+            M_J_best=VT_J
+            M_1_best=VT_1
+            M_2_best=VT_2
             sigma_J_best=sigma_J
             sigma_1_best=sigma_1
             sigma_2_best=sigma_2
@@ -784,17 +805,16 @@ def W_sJIVE_decompositon_1(times,r_J,r_1,r_2,X_1_or,X_2_or,threshold):
         if erro<threshold:
             break
 
-    return erro_lis,erro_best,S_J_best,U_1_best,U_2_best,S_1_best,W_1_best,S_2_best,W_2_best,sigma_J_best,sigma_1_best,sigma_2_best,hat_X_best
+    return erro_lis,erro_best,S_J_best,U_1_best,U_2_best,S_1_best,W_1_best,S_2_best,W_2_best,sigma_J_best,sigma_1_best,sigma_2_best,M_J_best,M_1_best,M_2_best,hat_X_best
 
-def W_sJIVE_decomposition_2(y_original,threshold,times,lam_J,lam_1,lam_2,gamma,S_J_best,S_1_best,S_2_best,sigma_J_best,sigma_1_best,sigma_2_best):
-    erro_best=1000
+def W_sJIVE_decomposition_2(y_original,times,lam_J,lam_1,lam_2,gamma_1,gamma_21,gamma_22,S_J_best,S_1_best,S_2_best,sigma_J_best,sigma_1_best,sigma_2_best):
     r_J=S_J_best.shape[0]
     r_1=S_1_best.shape[0]
     r_2=S_2_best.shape[0]
     erro_y_lis=[]
-    theta_1=theta_1_best=np.random.uniform(low=-0.1, high=0.1, size=int(r_J))
-    theta_21=theta_21_best=np.random.uniform(low=-0.1, high=0.1, size=int(r_1))
-    theta_22=theta_22_best=np.random.uniform(low=-0.1, high=0.1, size=int(r_2))
+    theta_1=np.random.uniform(low=-0.1, high=0.1, size=int(r_J))
+    theta_21=np.random.uniform(low=-0.1, high=0.1, size=int(r_1))
+    theta_22=np.random.uniform(low=-0.1, high=0.1, size=int(r_2))
     for l in tqdm.tqdm(range(times)):
         #pcLassoの対角行列を作成
         pcLasso_sigma_J=[]
@@ -802,21 +822,21 @@ def W_sJIVE_decomposition_2(y_original,threshold,times,lam_J,lam_1,lam_2,gamma,S
             a_i=sigma_J_best[0]**2-sigma_J_best[i]**2
             pcLasso_sigma_J.append(a_i)
         diag_sigma_J_final=np.diag(pcLasso_sigma_J)
-        diag_sigma_J_final_r_J=diag_sigma_J_final[:r_J,:r_J]
+        # diag_sigma_J_final_r_J=diag_sigma_J_final[:r_J,:r_J]
 
         pcLasso_sigma_1=[]
         for i in range(len(sigma_1_best)):
             a_i=sigma_1_best[0]**2-sigma_1_best[i]**2
             pcLasso_sigma_1.append(a_i)
         diag_sigma_1_final=np.diag(pcLasso_sigma_1)
-        diag_sigma_1_final_r_1=diag_sigma_1_final[:r_1,:r_1]
+        # diag_sigma_1_final_r_1=diag_sigma_1_final[:r_1,:r_1]
 
         pcLasso_sigma_2=[]
         for i in range(len(sigma_2_best)):
             a_i=sigma_2_best[0]**2-sigma_2_best[i]**2
             pcLasso_sigma_2.append(a_i)
         diag_sigma_2_final=np.diag(pcLasso_sigma_2)
-        diag_sigma_2_final_r_2=diag_sigma_2_final[:r_2,:r_2]
+        # diag_sigma_2_final_r_2=diag_sigma_2_final[:r_2,:r_2]
 
         #theta_1を更新
         for j in range(r_J):
@@ -825,11 +845,11 @@ def W_sJIVE_decomposition_2(y_original,threshold,times,lam_J,lam_1,lam_2,gamma,S
             S_J_best_j=S_J_best[j]
             z=(y_original-theta_21.dot(S_1_best)-theta_22.dot(S_2_best)-theta_1_del_j.dot(S_J_best_del_j)).dot(S_J_best_j.T)
             if z>lam_J:
-                theta_1[j]=(z-lam_J)/(np.linalg.norm(S_J_best_j,ord=2)**2)
+                theta_1[j]=(z-lam_J)/(np.linalg.norm(S_J_best_j,ord=2)**2+gamma_1*diag_sigma_J_final[j,j])
             elif np.absolute(z)<=lam_J:
                 theta_1[j]=0
             else:
-                theta_1[j]=(z+lam_J)/(np.linalg.norm(S_J_best_j,ord=2)**2)
+                theta_1[j]=(z+lam_J)/(np.linalg.norm(S_J_best_j,ord=2)**2+gamma_1*diag_sigma_J_final[j,j])
 
         #誤差をとる
         hat_y=theta_1.dot(S_J_best)+theta_21.dot(S_1_best)+theta_22.dot(S_2_best)
@@ -853,11 +873,11 @@ def W_sJIVE_decomposition_2(y_original,threshold,times,lam_J,lam_1,lam_2,gamma,S
             S_1_best_j=S_1_best[j]
             z=(y_original-theta_1.dot(S_J_best)-theta_22.dot(S_2_best)-theta_21_del_j.dot(S_1_best_del_j)).dot(S_1_best_j.T)
             if z>lam_1:
-                theta_21[j]=(z-lam_1)/(np.linalg.norm(S_1_best_j,ord=2)**2+gamma*diag_sigma_1_final_r_1[j,j])
+                theta_21[j]=(z-lam_1)/(np.linalg.norm(S_1_best_j,ord=2)**2+gamma_21*diag_sigma_1_final[j,j])
             elif np.absolute(z)<=lam_1:
                 theta_21[j]=0
             else:
-                theta_21[j]=(z+lam_1)/(np.linalg.norm(S_1_best_j,ord=2)**2+gamma*diag_sigma_1_final_r_1[j,j])
+                theta_21[j]=(z+lam_1)/(np.linalg.norm(S_1_best_j,ord=2)**2+gamma_21*diag_sigma_1_final[j,j])
 
 
         #誤差をとる
@@ -882,11 +902,11 @@ def W_sJIVE_decomposition_2(y_original,threshold,times,lam_J,lam_1,lam_2,gamma,S
             S_2_best_j=S_2_best[j]
             z=(y_original-theta_1.dot(S_J_best)-theta_21.dot(S_1_best)-theta_22_del_j.dot(S_2_best_del_j)).dot(S_2_best_j.T)
             if z>lam_2:
-                theta_22[j]=-(z-lam_2)/(np.linalg.norm(S_2_best_j,ord=2)**2+gamma*diag_sigma_2_final_r_2[j,j])
+                theta_22[j]=-(z-lam_2)/(np.linalg.norm(S_2_best_j,ord=2)**2+gamma_22*diag_sigma_2_final[j,j])
             elif np.absolute(z)<=lam_2:
                 theta_22[j]=0
             else:
-                theta_22[j]=(z+lam_2)/(np.linalg.norm(S_2_best_j,ord=2)**2+gamma*diag_sigma_2_final_r_2[j,j])
+                theta_22[j]=(z+lam_2)/(np.linalg.norm(S_2_best_j,ord=2)**2+gamma_22*diag_sigma_2_final[j,j])
 
 
         #誤差をとる
@@ -907,8 +927,7 @@ def W_sJIVE_decomposition_2(y_original,threshold,times,lam_J,lam_1,lam_2,gamma,S
 
     return erro_y_lis,erro,theta_1,theta_21,theta_22,hat_y
 
-def cv_W_sJIVE_decomposition(df_tra,r_J,r_1,r_2,p_1,p_2,times,threshold,times_tes,threshold_tes):
-    k = 5
+def cv_W_sJIVE_decomposition(df_tra,r_J,r_1,r_2,lam_J,lam_1,lam_2,gamma_1,gamma_21,gamma_22,p_1,p_2,times,threshold,k):
     kf = KFold(n_splits=k)
     lis_cv_best=[]
     for train_idex,test_idx in kf.split(df_tra.T):
@@ -919,21 +938,198 @@ def cv_W_sJIVE_decomposition(df_tra,r_J,r_1,r_2,p_1,p_2,times,threshold,times_te
         X_2_or=train_data[p_1:p_1+p_2,:]
         y_or=train_data[p_1+p_2:,:]
 
-        erro_lis,number_best,erro_best,S_J_best,U_1_best,U_2_best,theta_1_best,S_1_best,W_1_best,theta_21_best,S_2_best,W_2_best,theta_22_best,hat_X_y_best=sJIVE(
-            eta,times,r_J,r_1,r_2,X_1_or=X_1_or,X_2_or=X_2_or,y_or=y_or,threshold=threshold
+        erro_lis,erro_best,S_J_best,U_1_best,U_2_best,S_1_best,W_1_best,S_2_best,W_2_best,sigma_J_best,sigma_1_best,sigma_2_best,M_J_best,M_1_best,M_2_best,hat_X_best=W_sJIVE_decompositon_1(
+            times=times,r_J=r_J,r_1=r_1,r_2=r_2,X_1_or=X_1_or,X_2_or=X_2_or,threshold=threshold
+            )
+        erro_y_lis,erro_best,theta_1_best,theta_21_best,theta_22_best,hat_y_best=W_sJIVE_decomposition_2(
+            y_original=y_or,times=times,lam_J=lam_J,lam_1=lam_1,lam_2=lam_2,gamma_1=gamma_1,gamma_21=gamma_21,gamma_22=gamma_22,S_J_best=S_J_best,S_1_best=S_1_best,S_2_best=S_2_best,sigma_J_best=sigma_J_best,sigma_1_best=sigma_1_best,sigma_2_best=sigma_2_best
             )
         
+        nonzero_theta_1 = np.nonzero(theta_1_best)[0]
+        theta_1_best_sparse=theta_1_best[nonzero_theta_1]
+
+        U_1_best_sparse=U_1_best[:,nonzero_theta_1]
+        U_2_best_sparse=U_2_best[:,nonzero_theta_1]
+        S_J_best_sparse=S_J_best[nonzero_theta_1,:]
+
+        nonzero_theta_21 = np.nonzero(theta_21_best)[0]
+        theta_21_best_sparse=theta_21_best[nonzero_theta_21]
+        W_1_best_sparse=W_1_best[:,nonzero_theta_21]
+        S_1_best_sparse=S_1_best[nonzero_theta_21,:]
+
+        nonzero_theta_22 = np.nonzero(theta_22_best)[0]
+        theta_22_best_sparse=theta_22_best[nonzero_theta_22]
+        W_2_best_sparse=W_2_best[:,nonzero_theta_22]
+        S_2_best_sparse=S_2_best[nonzero_theta_22,:]
+
+
         X_1_tes=test_data[:p_1,:]
         X_2_tes=test_data[p_1:p_1+p_2,:]
         y_tes=test_data[p_1+p_2:,:]
-
+        
         erro_tes_lis,erro_tes_best,S_J_new_best,S_1_new_best,S_2_new_best,y_new,erro_result=sJIVE_prediction(
-            X_1_tes,X_2_tes,y_tes,U_1_best,U_2_best,W_1_best,W_2_best,theta_1_best,theta_21_best,theta_22_best,times_tes,threshold_tes
-            )
+            X_1_tes=X_1_tes,X_2_tes=X_2_tes,y_tes=y_tes,U_1_best=U_1_best_sparse,U_2_best=U_2_best_sparse,W_1_best=W_1_best_sparse,W_2_best=W_2_best_sparse,theta_1_best=theta_1_best_sparse,theta_21_best=theta_21_best_sparse,theta_22_best=theta_22_best_sparse,times_tes=100,threshold_tes=0.001
+        )
         lis_cv_best.append(erro_tes_best)
 
-    accuracy_sJIVE=np.mean(lis_cv_best)
+    accuracy_W_sJIVE_decomposition=np.mean(lis_cv_best)
 
-    return accuracy_sJIVE
+    return accuracy_W_sJIVE_decomposition
 
 
+def W_sJIVE_prediction(X_1_tes,X_2_tes,y_tes,gamma_1,gamma_21,gamma_22,U_1_best_sparse,U_2_best_sparse,W_1_best_sparse,W_2_best_sparse,theta_1_best_sparse,theta_21_best_sparse,theta_22_best_sparse,sigma_J_best_sparse,sigma_1_best_sparse,sigma_2_best_sparse,times_tes,threshold_tes):
+    m_tes=X_1_tes.shape[1]
+    r_J=U_1_best_sparse.shape[1]
+    r_1=W_1_best_sparse.shape[1]
+    r_2=W_2_best_sparse.shape[1]
+
+    times_tes=times_tes
+    erro_tes_best=100
+    erro_tes_lis=[]
+
+    U_1_hat=U_1_best_sparse
+    U_2_hat=U_2_best_sparse
+    U_hat=np.row_stack((U_1_hat,U_2_hat))
+
+    W_1_hat=W_1_best_sparse
+    W_2_hat=W_2_best_sparse
+
+    X_new=np.row_stack((X_1_tes,X_2_tes))
+
+    S_J_new=S_J_new_best=np.random.uniform(low=-0.1, high=0.1, size=(r_J,m_tes))
+    S_1_new=S_1_new_best=np.random.uniform(low=-0.1, high=0.1, size=(r_1,m_tes))
+    S_2_new=S_2_new_best=np.random.uniform(low=-0.1, high=0.1, size=(r_2,m_tes))
+
+
+    for j in tqdm.tqdm(range(times_tes)):
+        #推定
+        W_1_S_1_new=W_1_hat.dot(S_1_new)
+        W_2_S_2_new=W_2_hat.dot(S_2_new)
+        W_S_new=np.row_stack((W_1_S_1_new,W_2_S_2_new))
+
+        S_J_new=U_hat.T.dot(X_new-W_S_new)
+
+        #推定値を計算
+        hat_X_1_tes=U_1_hat.dot(S_J_new)+W_1_hat.dot(S_1_new)
+        hat_X_2_tes=U_2_hat.dot(S_J_new)+W_2_hat.dot(S_2_new)
+        hat_X_tes=np.row_stack((hat_X_1_tes,hat_X_2_tes))
+
+        #誤差を計算
+        erro_tes=np.linalg.norm(X_1_tes-hat_X_1_tes)**2+np.linalg.norm(X_2_tes-hat_X_2_tes)**2
+        erro_tes_lis.append(erro_tes)
+
+        if erro_tes<erro_tes_best:
+            erro_tes_best=erro_tes
+            S_J_new_best=S_J_new
+            S_1_new_best=S_1_new
+            S_2_new_best=S_2_new
+
+        if erro_tes<threshold_tes:
+            break
+
+        S_1_new=W_1_hat.T.dot(X_1_tes-U_1_hat.dot(S_J_new))
+
+        #推定値を計算
+        hat_X_1_tes=U_1_hat.dot(S_J_new)+W_1_hat.dot(S_1_new)
+        hat_X_2_tes=U_2_hat.dot(S_J_new)+W_2_hat.dot(S_2_new)
+        hat_X_tes=np.row_stack((hat_X_1_tes,hat_X_2_tes))
+        
+        #誤差を計算
+        erro_tes=np.linalg.norm(X_1_tes-hat_X_1_tes)**2+np.linalg.norm(X_2_tes-hat_X_2_tes)**2
+        erro_tes_lis.append(erro_tes)
+
+        if erro_tes<erro_tes_best:
+            erro_tes_best=erro_tes
+            S_J_new_best=S_J_new
+            S_1_new_best=S_1_new
+            S_2_new_best=S_2_new
+
+        if erro_tes<threshold_tes:
+            break
+
+
+        S_2_new=W_2_hat.T.dot(X_2_tes-U_2_hat.dot(S_J_new))
+        #推定値を計算
+        hat_X_1_tes=U_1_hat.dot(S_J_new)+W_1_hat.dot(S_1_new)
+        hat_X_2_tes=U_2_hat.dot(S_J_new)+W_2_hat.dot(S_2_new)
+        hat_X_tes=np.row_stack((hat_X_1_tes,hat_X_2_tes))
+
+        #誤差を計算
+        erro_tes=np.linalg.norm(X_1_tes-hat_X_1_tes)**2+np.linalg.norm(X_2_tes-hat_X_2_tes)**2
+        erro_tes_lis.append(erro_tes)
+
+        if erro_tes<erro_tes_best:
+            erro_tes_best=erro_tes
+            S_J_new_best=S_J_new
+            S_1_new_best=S_1_new
+            S_2_new_best=S_2_new
+
+        if erro_tes<threshold_tes:
+            break
+
+    #ここから回帰係数の推定
+    sigma_J_new_2=np.diag(np.diag(S_J_new_best.dot(S_J_new_best.T)))
+    sigma_J_new = np.diag(np.sqrt(np.diag(S_J_new_best.dot(S_J_new_best.T))))
+    pc_sigma_J_new_lis=[]
+    for i in range(len(sigma_J_new)):
+        a_i=sigma_J_new[0]**2-sigma_J_new[i]**2
+        pc_sigma_J_new_lis.append(a_i)
+    pc_sigma_J_new=np.diag(pc_sigma_J_new_lis)
+    # M_J_new=np.linalg.inv(sigma_J_new).dot(S_J_new_best)
+
+    sigma_J_best_sparse_2=np.diag(np.square(sigma_J_best_sparse))
+    pc_sigma_J_sparse_lis=[]
+    for i in range(len(sigma_J_best_sparse)):
+        a_i=sigma_J_best_sparse[0]**2-sigma_J_best_sparse[i]**2
+        pc_sigma_J_sparse_lis.append(a_i)
+    pc_sigma_J_sparse=np.diag(pc_sigma_J_sparse_lis)
+
+    # theta_1_new=((y_original-theta_21_best_sparse.dot(S_1_best_sparse)-theta_22_best_sparse.dot(S_2_best_sparse)).dot(M_J_best_sparse.T).dot(M_J_new)).dot(S_J_new_best.T).dot(np.linalg.inv(sigma_J_new_2+gamma*pc_sigma_J_new))
+    theta_1_new=theta_1_best_sparse.dot(sigma_J_best_sparse_2+gamma_1*pc_sigma_J_sparse).dot(np.linalg.inv(sigma_J_best_sparse_2)).dot(sigma_J_new_2).dot(np.linalg.inv(sigma_J_new_2+gamma_1*pc_sigma_J_new))
+
+    sigma_1_new_2=np.diag(np.diag(S_1_new_best.dot(S_1_new_best.T)))
+    sigma_1_new = np.diag(np.sqrt(np.diag(S_1_new_best.dot(S_1_new_best.T))))
+    pc_sigma_1=[]
+    for i in range(len(sigma_1_new)):
+        a_i=sigma_1_new[0]**2-sigma_1_new[i]**2
+        pc_sigma_1.append(a_i)
+    pc_sigma_1_new=np.diag(pc_sigma_1)
+    # M_1_new=np.linalg.inv(sigma_1_new).dot(S_1_new_best)
+
+    sigma_1_best_sparse_2=np.diag(np.square(sigma_1_best_sparse))
+    pc_sigma_1_sparse_lis=[]
+    for i in range(len(sigma_1_best_sparse)):
+        a_i=sigma_1_best_sparse[0]**2-sigma_1_best_sparse[i]**2
+        pc_sigma_1_sparse_lis.append(a_i)
+    pc_sigma_1_sparse=np.diag(pc_sigma_1_sparse_lis)
+
+    # theta_21_new=((y_original-theta_1_best_sparse.dot(S_J_best_sparse)-theta_22_best_sparse.dot(S_2_best_sparse)).dot(M_1_best_sparse.T).dot(M_1_new)).dot(S_1_new_best.T).dot(np.linalg.inv(sigma_1_new_2+gamma*pc_sigma_1_new))
+    theta_21_new=theta_21_best_sparse.dot(sigma_1_best_sparse_2+gamma_21*pc_sigma_1_sparse).dot(np.linalg.inv(sigma_1_best_sparse_2)).dot(sigma_1_new_2).dot(np.linalg.inv(sigma_1_new_2+gamma_21*pc_sigma_1_new))
+
+    sigma_2_new_2=np.diag(np.diag(S_2_new_best.dot(S_2_new_best.T)))
+    sigma_2_new = np.diag(np.sqrt(np.diag(S_2_new_best.dot(S_2_new_best.T))))
+    pc_sigma_2=[]
+    for i in range(len(sigma_2_new)):
+        a_i=sigma_2_new[0]**2-sigma_2_new[i]**2
+        pc_sigma_2.append(a_i)
+    pc_sigma_2_new=np.diag(pc_sigma_2)
+    # M_2_new=np.linalg.inv(sigma_2_new).dot(S_2_new_best)
+
+    sigma_2_best_sparse_2=np.diag(np.square(sigma_2_best_sparse))
+    pc_sigma_2_sparse_lis=[]
+    for i in range(len(sigma_2_best_sparse)):
+        a_i=sigma_2_best_sparse[0]**2-sigma_2_best_sparse[i]**2
+        pc_sigma_2_sparse_lis.append(a_i)
+    pc_sigma_2_sparse=np.diag(pc_sigma_2_sparse_lis)
+
+
+    # theta_22_new=((y_original-theta_1_best_sparse.dot(S_J_best_sparse)-theta_21_best_sparse.dot(S_1_best_sparse)).dot(M_2_best_sparse.T).dot(M_2_new)).dot(S_2_new_best.T).dot(np.linalg.inv(sigma_2_new_2+gamma*pc_sigma_2_new))
+    theta_22_new=theta_22_best_sparse.dot(sigma_2_best_sparse_2+gamma_22*pc_sigma_2_sparse).dot(np.linalg.inv(sigma_2_best_sparse_2)).dot(sigma_2_new_2).dot(np.linalg.inv(sigma_2_new_2+gamma_22*pc_sigma_2_new))
+
+
+
+    
+    y_new=theta_1_new.dot(S_J_new_best)+theta_21_new.dot(S_1_new_best)+theta_22_new.dot(S_2_new_best)
+    erro_result=np.linalg.norm(y_tes-y_new)**2
+
+    return erro_tes_lis,erro_tes_best,S_J_new_best,S_1_new_best,S_2_new_best,theta_1_new,theta_21_new,theta_22_new,y_new,erro_result,sigma_J_new
