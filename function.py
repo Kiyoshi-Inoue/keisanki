@@ -177,6 +177,88 @@ def gene_data_2(p_1,p_2,n,r_J,r_1,r_2,r_prop,W_J_lis,W_1_lis,W_2_lis,X1_erro,X2_
 
     return X_1,X_2,y
 
+def gene_data_3(p_1,p_2,n,r_J,r_1,r_2,W_J_lis,W_1_lis,W_2_lis,X1_erro,X2_erro,y_erro):
+    #S_Jの作成
+    diag_joint_matrix = np.diag(W_J_lis)
+    S_J_old=np.random.uniform(low=0, high=1, size=(r_J,n))
+    S_J=np.dot(diag_joint_matrix,S_J_old)
+    S_J_true=np.copy(S_J)
+    S_J_true[1]=0
+    S_J_true[3]=0
+
+    #S_iの生成
+    diag_x1_matrix = np.diag(W_1_lis)
+    S_1_old=np.random.uniform(low=0, high=1, size=(r_1,n))
+    P_SJ=S_J.T.dot(np.linalg.inv(S_J.dot(S_J.T))).dot(S_J)
+    diag_matrix = np.diag([1] * n)
+    P_SJ_C=diag_matrix-P_SJ
+    S_1=diag_x1_matrix.dot(S_1_old).dot(P_SJ_C)
+    S_1_true=np.copy(S_1)
+    S_1_true[1]=0
+    S_1_true[3]=0
+
+    diag_x2_matrix = np.diag(W_2_lis)
+    S_2_old=np.random.uniform(low=0, high=1, size=(r_2,n))
+    S_2=diag_x2_matrix.dot(S_2_old).dot(P_SJ_C)
+    S_2_true=np.copy(S_2)
+    S_2_true[1]=0
+    S_2_true[3]=0
+
+    #U_iを生成
+    U_1=np.random.uniform(low=0.5, high=1, size=(p_1,r_J))
+    U_2=np.random.uniform(low=0.5, high=1, size=(p_2,r_J))
+    U_old=np.row_stack((U_1,U_2))
+    U_Q,U_R=np.linalg.qr(U_old)
+    U_new=U_Q/np.linalg.norm(U_Q)
+    U_1_new=U_new[:p_1,:]
+    U_2_new=U_new[p_1:,:]
+
+    #W_iを生成
+    W_1=np.random.uniform(low=0.5, high=1, size=(p_1,r_1))
+    W_1_Q,W_1_R=np.linalg.qr(W_1)
+    W_1_new=W_1_Q/np.linalg.norm(W_1_Q)
+
+    W_2=np.random.uniform(low=0.5, high=1, size=(p_2,r_2))
+    W_2_Q,W_2_R=np.linalg.qr(W_2)
+    W_2_new=W_2_Q/np.linalg.norm(W_2_Q)
+
+
+    #theta_1を生成
+    theta_1_old=np.random.uniform(low=0.5, high=1, size=r_J)
+    theta_1_old[1]=0
+    theta_1_old[3]=0
+    theta_1_new=theta_1_old.reshape(1,r_J)
+
+    theta_21_old=np.random.uniform(low=0.5, high=1, size=r_1)
+    theta_21_old[1]=0
+    theta_21_old[3]=0
+    theta_21_new=theta_21_old.reshape(1,r_1)
+
+    theta_22_old=np.random.uniform(low=0.5, high=1, size=r_2)
+    theta_22_old[1]=0
+    theta_22_old[3]=0
+    theta_22_new=theta_22_old.reshape(1,r_1)
+
+    X_1=U_1_new.dot(S_J)+W_1_new.dot(S_1)
+    var_X1=np.var(X_1)
+    var_E1=X1_erro*var_X1
+    E_1=np.random.normal(loc=0, scale=np.sqrt(var_E1), size=(p_1,n))
+    X_1=X_1+E_1
+
+    X_2=U_2_new.dot(S_J)+W_2_new.dot(S_2)
+    var_X2=np.var(X_2)
+    var_E2=X2_erro*var_X2
+    E_2=np.random.normal(loc=0, scale=np.sqrt(var_E2), size=(p_2,n))
+    X_2=X_2+E_2  
+
+    y=theta_1_new.dot(S_J)+theta_21_new.dot(S_1)+theta_22_new.dot(S_2)
+    var_y=np.var(y)
+    var_e_y=y_erro*var_y
+    e_y=np.random.normal(loc=0, scale=np.sqrt(var_e_y), size=(1,n))
+    y=y+e_y
+
+    return X_1,X_2,y,S_J,S_1,S_2,U_1_new,U_2_new,W_1_new,W_2_new,S_J_true,S_1_true,S_2
+
 #sJIVEで近似
 def sJIVE(eta,times,r_J,r_1,r_2,X_1_or,X_2_or,y_or,threshold):
     number_best=0
@@ -561,6 +643,38 @@ def cv_sJIVE(df_tra,eta,r_J,r_1,r_2,p_1,p_2,times,threshold,times_tes,threshold_
 
     return accuracy_sJIVE
 
+#クロスバリデーション
+def cv_sJIVE_2(df_tra,eta,r_J,r_1,r_2,times,threshold,times_tes,threshold_tes):
+    k = 5
+    p_1=45
+    p_2=34
+    kf = KFold(n_splits=k)
+    lis_cv_best=[]
+    for train_idex,test_idx in kf.split(df_tra.T):
+        train_data=df_tra[:,train_idex]
+        test_data=df_tra[:,test_idx]
+        
+        X_1_or=train_data[:p_1,:]
+        X_2_or=train_data[p_1:p_1+p_2,:]
+        y_or=train_data[p_1+p_2:,:]
+
+        erro_lis,number_best,erro_best,S_J_best,U_1_best,U_2_best,theta_1_best,S_1_best,W_1_best,theta_21_best,S_2_best,W_2_best,theta_22_best,hat_X_y_best=sJIVE(
+            eta,times,r_J,r_1,r_2,X_1_or=X_1_or,X_2_or=X_2_or,y_or=y_or,threshold=threshold
+            )
+        
+        X_1_tes=test_data[:p_1,:]
+        X_2_tes=test_data[p_1:p_1+p_2,:]
+        y_tes=test_data[p_1+p_2:,:]
+
+        erro_tes_lis,erro_tes_best,S_J_new_best,S_1_new_best,S_2_new_best,y_new,erro_result=sJIVE_prediction(
+            X_1_tes,X_2_tes,y_tes,U_1_best,U_2_best,W_1_best,W_2_best,theta_1_best,theta_21_best,theta_22_best,times_tes,threshold_tes
+            )
+        lis_cv_best.append(erro_tes_best)
+
+    accuracy_sJIVE=np.mean(lis_cv_best)
+
+    return accuracy_sJIVE
+
 def W_sJIVE_decompositon_1(times,r_J,r_1,r_2,X_1_or,X_2_or,threshold):
     times=times
     erro_lis=[]
@@ -625,8 +739,9 @@ def W_sJIVE_decompositon_1(times,r_J,r_1,r_2,X_1_or,X_2_or,threshold):
             sigma_2_best=sigma_2
             hat_X_best=hat_X
 
-        if erro<threshold:
-            break
+        if i>0:
+            if erro<threshold:
+                break
 
         #Uを更新
         U_J,sigma_J,VT_J=np.linalg.svd(X-W_S,full_matrices=False) #特異値分解を行う
@@ -660,8 +775,9 @@ def W_sJIVE_decompositon_1(times,r_J,r_1,r_2,X_1_or,X_2_or,threshold):
             sigma_2_best=sigma_2
             hat_X_best=hat_X
 
-        if erro<threshold:
-            break
+        if i>0:
+            if erro<threshold:
+                break
         
         #S_1を更新
         U_1_S_J=U_1.dot(S_J)
@@ -696,8 +812,9 @@ def W_sJIVE_decompositon_1(times,r_J,r_1,r_2,X_1_or,X_2_or,threshold):
             sigma_2_best=sigma_2
             hat_X_best=hat_X
 
-        if erro<threshold:
-            break
+        if i>0:
+            if erro<threshold:
+                break
 
         #W_1を更新
         U_I_1,sigma_1,VT_1=np.linalg.svd((X_1-U_1_S_J).dot(P_SJ_C),full_matrices=False) #特異値分解を行う
@@ -731,8 +848,9 @@ def W_sJIVE_decompositon_1(times,r_J,r_1,r_2,X_1_or,X_2_or,threshold):
             sigma_2_best=sigma_2
             hat_X_best=hat_X
 
-        if erro<threshold:
-            break
+        if i>0:
+            if erro<threshold:
+                break
 
         #S_2を更新
         U_2_S_J=U_2.dot(S_J)
@@ -767,8 +885,9 @@ def W_sJIVE_decompositon_1(times,r_J,r_1,r_2,X_1_or,X_2_or,threshold):
             sigma_2_best=sigma_2
             hat_X_best=hat_X
 
-        if erro<threshold:
-            break
+        if i>0:
+            if erro<threshold:
+                break
 
         #W_2を更新
         U_I_2,sigma_2,VT_2=np.linalg.svd((X_2-U_2_S_J).dot(P_SJ_C),full_matrices=False) #特異値分解を行う
@@ -802,8 +921,9 @@ def W_sJIVE_decompositon_1(times,r_J,r_1,r_2,X_1_or,X_2_or,threshold):
             sigma_2_best=sigma_2
             hat_X_best=hat_X
 
-        if erro<threshold:
-            break
+        if i>0:
+            if erro<threshold:
+                break
 
     return erro_lis,erro_best,S_J_best,U_1_best,U_2_best,S_1_best,W_1_best,S_2_best,W_2_best,sigma_J_best,sigma_1_best,sigma_2_best,M_J_best,M_1_best,M_2_best,hat_X_best
 
@@ -976,6 +1096,57 @@ def cv_W_sJIVE_decomposition(df_tra,r_J,r_1,r_2,lam_J,lam_1,lam_2,gamma_1,gamma_
 
     return accuracy_W_sJIVE_decomposition
 
+def cv_W_sJIVE_decomposition_2(df_tra,r_J,r_1,r_2,lam_J,lam_1,lam_2,gamma_1,gamma_21,gamma_22,times,threshold,k):
+    kf = KFold(n_splits=k)
+    p_1=45
+    p_2=34
+    lis_cv_best=[]
+    for train_idex,test_idx in kf.split(df_tra.T):
+        train_data=df_tra[:,train_idex]
+        test_data=df_tra[:,test_idx]
+        
+        X_1_or=train_data[:p_1,:]
+        X_2_or=train_data[p_1:p_1+p_2,:]
+        y_or=train_data[p_1+p_2:,:]
+
+        erro_lis,erro_best,S_J_best,U_1_best,U_2_best,S_1_best,W_1_best,S_2_best,W_2_best,sigma_J_best,sigma_1_best,sigma_2_best,M_J_best,M_1_best,M_2_best,hat_X_best=W_sJIVE_decompositon_1(
+            times=times,r_J=r_J,r_1=r_1,r_2=r_2,X_1_or=X_1_or,X_2_or=X_2_or,threshold=threshold
+            )
+        erro_y_lis,erro_best,theta_1_best,theta_21_best,theta_22_best,hat_y_best=W_sJIVE_decomposition_2(
+            y_original=y_or,times=times,lam_J=lam_J,lam_1=lam_1,lam_2=lam_2,gamma_1=gamma_1,gamma_21=gamma_21,gamma_22=gamma_22,S_J_best=S_J_best,S_1_best=S_1_best,S_2_best=S_2_best,sigma_J_best=sigma_J_best,sigma_1_best=sigma_1_best,sigma_2_best=sigma_2_best
+            )
+        
+        nonzero_theta_1 = np.nonzero(theta_1_best)[0]
+        theta_1_best_sparse=theta_1_best[nonzero_theta_1]
+
+        U_1_best_sparse=U_1_best[:,nonzero_theta_1]
+        U_2_best_sparse=U_2_best[:,nonzero_theta_1]
+        S_J_best_sparse=S_J_best[nonzero_theta_1,:]
+
+        nonzero_theta_21 = np.nonzero(theta_21_best)[0]
+        theta_21_best_sparse=theta_21_best[nonzero_theta_21]
+        W_1_best_sparse=W_1_best[:,nonzero_theta_21]
+        S_1_best_sparse=S_1_best[nonzero_theta_21,:]
+
+        nonzero_theta_22 = np.nonzero(theta_22_best)[0]
+        theta_22_best_sparse=theta_22_best[nonzero_theta_22]
+        W_2_best_sparse=W_2_best[:,nonzero_theta_22]
+        S_2_best_sparse=S_2_best[nonzero_theta_22,:]
+
+
+        X_1_tes=test_data[:p_1,:]
+        X_2_tes=test_data[p_1:p_1+p_2,:]
+        y_tes=test_data[p_1+p_2:,:]
+        
+        erro_tes_lis,erro_tes_best,S_J_new_best,S_1_new_best,S_2_new_best,y_new,erro_result=sJIVE_prediction(
+            X_1_tes=X_1_tes,X_2_tes=X_2_tes,y_tes=y_tes,U_1_best=U_1_best_sparse,U_2_best=U_2_best_sparse,W_1_best=W_1_best_sparse,W_2_best=W_2_best_sparse,theta_1_best=theta_1_best_sparse,theta_21_best=theta_21_best_sparse,theta_22_best=theta_22_best_sparse,times_tes=100,threshold_tes=0.001
+        )
+        lis_cv_best.append(erro_tes_best)
+
+    accuracy_W_sJIVE_decomposition=np.mean(lis_cv_best)
+
+    return accuracy_W_sJIVE_decomposition
+
 
 def W_sJIVE_prediction(X_1_tes,X_2_tes,y_tes,gamma_1,gamma_21,gamma_22,U_1_best_sparse,U_2_best_sparse,W_1_best_sparse,W_2_best_sparse,theta_1_best_sparse,theta_21_best_sparse,theta_22_best_sparse,sigma_J_best_sparse,sigma_1_best_sparse,sigma_2_best_sparse,times_tes,threshold_tes):
     m_tes=X_1_tes.shape[1]
@@ -1024,8 +1195,9 @@ def W_sJIVE_prediction(X_1_tes,X_2_tes,y_tes,gamma_1,gamma_21,gamma_22,U_1_best_
             S_1_new_best=S_1_new
             S_2_new_best=S_2_new
 
-        if erro_tes<threshold_tes:
-            break
+        if j>0:
+            if erro_tes<threshold_tes:
+                break
 
         S_1_new=W_1_hat.T.dot(X_1_tes-U_1_hat.dot(S_J_new))
 
@@ -1044,8 +1216,10 @@ def W_sJIVE_prediction(X_1_tes,X_2_tes,y_tes,gamma_1,gamma_21,gamma_22,U_1_best_
             S_1_new_best=S_1_new
             S_2_new_best=S_2_new
 
-        if erro_tes<threshold_tes:
-            break
+
+        if j>0:
+            if erro_tes<threshold_tes:
+                break
 
 
         S_2_new=W_2_hat.T.dot(X_2_tes-U_2_hat.dot(S_J_new))
@@ -1064,8 +1238,10 @@ def W_sJIVE_prediction(X_1_tes,X_2_tes,y_tes,gamma_1,gamma_21,gamma_22,U_1_best_
             S_1_new_best=S_1_new
             S_2_new_best=S_2_new
 
-        if erro_tes<threshold_tes:
-            break
+
+        if j>0:
+            if erro_tes<threshold_tes:
+                break
 
     #ここから回帰係数の推定
     sigma_J_new_2=np.diag(np.diag(S_J_new_best.dot(S_J_new_best.T)))
@@ -1078,6 +1254,7 @@ def W_sJIVE_prediction(X_1_tes,X_2_tes,y_tes,gamma_1,gamma_21,gamma_22,U_1_best_
     # M_J_new=np.linalg.inv(sigma_J_new).dot(S_J_new_best)
 
     sigma_J_best_sparse_2=np.diag(np.square(sigma_J_best_sparse))
+    sigma_J_best_sparse_1=np.diag(sigma_J_best_sparse)
     pc_sigma_J_sparse_lis=[]
     for i in range(len(sigma_J_best_sparse)):
         a_i=sigma_J_best_sparse[0]**2-sigma_J_best_sparse[i]**2
@@ -1085,7 +1262,8 @@ def W_sJIVE_prediction(X_1_tes,X_2_tes,y_tes,gamma_1,gamma_21,gamma_22,U_1_best_
     pc_sigma_J_sparse=np.diag(pc_sigma_J_sparse_lis)
 
     # theta_1_new=((y_original-theta_21_best_sparse.dot(S_1_best_sparse)-theta_22_best_sparse.dot(S_2_best_sparse)).dot(M_J_best_sparse.T).dot(M_J_new)).dot(S_J_new_best.T).dot(np.linalg.inv(sigma_J_new_2+gamma*pc_sigma_J_new))
-    theta_1_new=theta_1_best_sparse.dot(sigma_J_best_sparse_2+gamma_1*pc_sigma_J_sparse).dot(np.linalg.inv(sigma_J_best_sparse_2)).dot(sigma_J_new_2).dot(np.linalg.inv(sigma_J_new_2+gamma_1*pc_sigma_J_new))
+    # theta_1_new=theta_1_best_sparse.dot(sigma_J_best_sparse_2+gamma_1*pc_sigma_J_sparse).dot(np.linalg.inv(sigma_J_best_sparse_2)).dot(sigma_J_new_2).dot(np.linalg.inv(sigma_J_new_2+gamma_1*pc_sigma_J_new))
+    theta_1_new=theta_1_best_sparse.dot(sigma_J_best_sparse_2+gamma_1*pc_sigma_J_sparse).dot(np.linalg.inv(sigma_J_best_sparse_1)).dot(sigma_J_new).dot(np.linalg.inv(sigma_J_new_2+gamma_1*pc_sigma_J_new))
 
     sigma_1_new_2=np.diag(np.diag(S_1_new_best.dot(S_1_new_best.T)))
     sigma_1_new = np.diag(np.sqrt(np.diag(S_1_new_best.dot(S_1_new_best.T))))
@@ -1096,6 +1274,7 @@ def W_sJIVE_prediction(X_1_tes,X_2_tes,y_tes,gamma_1,gamma_21,gamma_22,U_1_best_
     pc_sigma_1_new=np.diag(pc_sigma_1)
     # M_1_new=np.linalg.inv(sigma_1_new).dot(S_1_new_best)
 
+    sigma_1_best_sparse_1=np.diag(sigma_1_best_sparse)
     sigma_1_best_sparse_2=np.diag(np.square(sigma_1_best_sparse))
     pc_sigma_1_sparse_lis=[]
     for i in range(len(sigma_1_best_sparse)):
@@ -1104,7 +1283,7 @@ def W_sJIVE_prediction(X_1_tes,X_2_tes,y_tes,gamma_1,gamma_21,gamma_22,U_1_best_
     pc_sigma_1_sparse=np.diag(pc_sigma_1_sparse_lis)
 
     # theta_21_new=((y_original-theta_1_best_sparse.dot(S_J_best_sparse)-theta_22_best_sparse.dot(S_2_best_sparse)).dot(M_1_best_sparse.T).dot(M_1_new)).dot(S_1_new_best.T).dot(np.linalg.inv(sigma_1_new_2+gamma*pc_sigma_1_new))
-    theta_21_new=theta_21_best_sparse.dot(sigma_1_best_sparse_2+gamma_21*pc_sigma_1_sparse).dot(np.linalg.inv(sigma_1_best_sparse_2)).dot(sigma_1_new_2).dot(np.linalg.inv(sigma_1_new_2+gamma_21*pc_sigma_1_new))
+    theta_21_new=theta_21_best_sparse.dot(sigma_1_best_sparse_2+gamma_21*pc_sigma_1_sparse).dot(np.linalg.inv(sigma_1_best_sparse_1)).dot(sigma_1_new).dot(np.linalg.inv(sigma_1_new_2+gamma_21*pc_sigma_1_new))
 
     sigma_2_new_2=np.diag(np.diag(S_2_new_best.dot(S_2_new_best.T)))
     sigma_2_new = np.diag(np.sqrt(np.diag(S_2_new_best.dot(S_2_new_best.T))))
@@ -1115,6 +1294,7 @@ def W_sJIVE_prediction(X_1_tes,X_2_tes,y_tes,gamma_1,gamma_21,gamma_22,U_1_best_
     pc_sigma_2_new=np.diag(pc_sigma_2)
     # M_2_new=np.linalg.inv(sigma_2_new).dot(S_2_new_best)
 
+    sigma_2_best_sparse_1=np.diag(sigma_1_best_sparse)
     sigma_2_best_sparse_2=np.diag(np.square(sigma_2_best_sparse))
     pc_sigma_2_sparse_lis=[]
     for i in range(len(sigma_2_best_sparse)):
@@ -1124,7 +1304,7 @@ def W_sJIVE_prediction(X_1_tes,X_2_tes,y_tes,gamma_1,gamma_21,gamma_22,U_1_best_
 
 
     # theta_22_new=((y_original-theta_1_best_sparse.dot(S_J_best_sparse)-theta_21_best_sparse.dot(S_1_best_sparse)).dot(M_2_best_sparse.T).dot(M_2_new)).dot(S_2_new_best.T).dot(np.linalg.inv(sigma_2_new_2+gamma*pc_sigma_2_new))
-    theta_22_new=theta_22_best_sparse.dot(sigma_2_best_sparse_2+gamma_22*pc_sigma_2_sparse).dot(np.linalg.inv(sigma_2_best_sparse_2)).dot(sigma_2_new_2).dot(np.linalg.inv(sigma_2_new_2+gamma_22*pc_sigma_2_new))
+    theta_22_new=theta_22_best_sparse.dot(sigma_2_best_sparse_2+gamma_22*pc_sigma_2_sparse).dot(np.linalg.inv(sigma_2_best_sparse_1)).dot(sigma_2_new).dot(np.linalg.inv(sigma_2_new_2+gamma_22*pc_sigma_2_new))
 
 
 
